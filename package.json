@@ -1,0 +1,39 @@
+{
+  "name": "app",
+  "version": "1.0.0",
+  "description": "- `src/` — исходный код (React, Node.js) - `docs/` — автогенерируемая документация - `README.md` — основная информация",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "prestart": "npm run docs:ai",
+    "db:sql": "pg_dump -U $PGUSER -h $PGHOST -p $PGPORT --schema-only $PGDATABASE > docs/schema.sql",
+    "db:dbml": "npx dbml2sql docs/schema.sql -o docs/db.dbml",
+    "db:drop": "dotenv -e .env -- bash -c 'export PGPASSWORD=\"$PGPASSWORD\"; psql -U \"$PGUSER\" -h \"$PGHOST\" -p \"$PGPORT\" -d \"$PGDATABASE\" -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\"'",
+    "db:schema": "dotenv -e .env -- dbml2sql docs/db.dbml -o schema.sql --postgres && dotenv -e .env -- bash -c 'export PGPASSWORD=\"$PGPASSWORD\"; psql -U \"$PGUSER\" -h \"$PGHOST\" -p \"$PGPORT\" -d \"$PGDATABASE\" -f schema.sql'",
+    "db:seed": "dotenv -e .env -- bash -c 'export PGPASSWORD=\"$PGPASSWORD\"; psql -U \"$PGUSER\" -h \"$PGHOST\" -p \"$PGPORT\" -d \"$PGDATABASE\" -f seed.sql'",
+    "db:reset": "npm run db:drop && npm run db:schema && npm run db:seed",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "docs:ai": "jsdoc2md src/**/*.js > docs/AI_FUNCTIONS.md"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@dbml/cli": "^3.13.5",
+    "dotenv-cli": "^8.0.0",
+    "jsdoc": "^4.0.4",
+    "jsdoc-to-markdown": "^8.0.0",
+    "nodemon": "^3.1.10"
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "pg": "^8.15.6",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7"
+  }
+}

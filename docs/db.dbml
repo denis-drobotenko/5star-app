@@ -1,0 +1,113 @@
+// Структура БД для dbdocs/dbdiagram.io
+
+Table users {
+  id serial [pk]
+  username varchar [unique, not null]
+  password_hash varchar [not null]
+  full_name varchar
+  email varchar [unique]
+  role varchar [not null] // admin, analyst, moderator
+  is_active boolean [default: true]
+  created_at timestamp [default: `now()`]
+}
+
+Table orders {
+  id serial [pk]
+  city varchar
+  subdivision varchar
+  pick_up_point varchar
+  order_number varchar
+  order_date timestamp
+  delivery_date timestamp
+  customer_id varchar
+  telephone varchar
+  name varchar
+  last_name varchar
+  car_brand varchar
+  car_model varchar
+  category varchar
+  brand varchar
+  article_number varchar
+  product varchar
+  quantity int
+  revenue float
+  cost_price float
+  entry_date timestamp
+  entry_user varchar
+  session_id varchar
+}
+
+Table companies {
+  id serial [pk]
+  name varchar [not null]
+  inn varchar [not null, unique] // ИНН
+  kpp varchar // КПП
+  legal_address varchar // юридический адрес
+  actual_address varchar // фактический адрес
+  bank_details varchar // банковские реквизиты
+  contact_persons text // контактные лица и их телефоны/email (можно вынести в отдельную таблицу позже)
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table company_representatives {
+  id serial [pk]
+  company_id int [ref: > companies.id, not null]
+  full_name varchar [not null]
+  position varchar
+  email varchar
+  phone varchar
+  created_at timestamp [default: `now()`]
+}
+
+Table field_mappings {
+  id serial [pk]
+  company_id int [ref: > companies.id, not null]
+  client_field varchar [not null] // поле из файла клиента
+  system_field varchar [not null] // поле из таблицы orders
+  created_at timestamp [default: `now()`]
+}
+
+Table import_history {
+  id serial [pk]
+  company_id int [ref: > companies.id, not null]
+  user_id int [ref: > users.id, not null] // кто загрузил
+  file_name varchar [not null]
+  source_type varchar // XLSX, Google Sheets
+  source_link varchar // путь к файлу или ссылка
+  status varchar [not null] // успешно, ошибка, в обработке
+  created_at timestamp [default: `now()`]
+}
+
+Table dictionaries {
+  id serial [pk]
+  type varchar [not null] // тип словаря: города, имена, категории и т.д.
+  value varchar [not null] // корректное значение
+  extra varchar // вспомогательное поле (например, пол для имен)
+  user_id int [ref: > users.id] // кто добавил/изменил
+  is_deleted boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table aliases {
+  id serial [pk]
+  dictionary_id int [ref: > dictionaries.id, not null]
+  alias varchar [not null] // некорректное/альтернативное значение
+  user_id int [ref: > users.id] // кто добавил/изменил
+  is_deleted boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+Table blocklists {
+  id serial [pk]
+  company_id int [ref: > companies.id]
+  user_id int [ref: > users.id]
+  phone varchar [not null] // телефон, которому не делать рассылку
+  is_deleted boolean [default: false]
+  created_at timestamp [default: `now()`]
+  updated_at timestamp
+}
+
+// Можно добавлять другие таблицы по аналогии 
