@@ -102,8 +102,8 @@ function DashboardLayout() {
 
   const menuItems = [
     { key: '/dashboard', icon: <HomeOutlined />, label: <Link to="/dashboard">Главная</Link> },
-    { key: '/dashboard/companies', icon: <ApartmentOutlined />, label: <Link to="/dashboard/companies">Юрлица</Link> },
     { key: '/dashboard/clients', icon: <TeamOutlined />, label: <Link to="/dashboard/clients">Клиенты</Link> },
+    { key: '/dashboard/companies', icon: <ApartmentOutlined />, label: <Link to="/dashboard/companies">Юрлица</Link> },
     { key: '/dashboard/users', icon: <UsergroupAddOutlined />, label: <Link to="/dashboard/users">Пользователи</Link> },
     { key: '/dashboard/field-mappings', icon: <BranchesOutlined />, label: <Link to="/dashboard/field-mappings">Маппинг полей</Link> },
     {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Typography, Form, Input, message, Select, Skeleton, Upload, Progress, Empty, Space } from 'antd';
-import { InfoCircleOutlined, UploadOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
+import { InfoCircleOutlined, UploadOutlined, LeftOutlined, RightOutlined, PlusOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
 import { API_URL } from '../constants/appConstants';
 import { requiredFields, targetFieldMappings } from '../constants/fieldMappingConstants';
 
@@ -310,49 +310,50 @@ function FieldMappingPage() {
   const currentMappingData = selectedId && selectedId !== 'new' ? mappings.find(m => m.id === selectedId) : null;
 
   return (
-    <div className="list-detail-layout">
-      <div 
-        className="list-container"
-        style={{ 
-          // width: '320px',
-          // minWidth: '320px'
-        }}
-      >
+    <div className="list-detail-layout" style={{ height: '100%' }}>
+      <div className="list-container">
         <div className="list-header">
-          <Title level={4} style={{ margin: 0, flex: 1 }}>Профили маппинга</Title>
-          <Button className="add-list-item-button" type="primary" size="small" onClick={handleAdd}>
-            Добавить
-          </Button>
+          <Title level={4} style={{ margin: 0, flex: 1 }}>Правила маппинга</Title>
+          <Button type="primary" size="small" className="add-list-item-button" onClick={handleAdd}>Добавить</Button>
         </div>
-        {loadingMappings && mappings.length === 0 ? (
-          <Skeleton active paragraph={{ rows: 8 }} />
-        ) : mappings.length > 0 ? (
-          <div className="list-scroll-area">
-            {mappings.map(m => (
-              <div
-                key={m.id}
-                onClick={() => handleSelect(m.id)}
-                className={`list-item mapping-list-item ${selectedId === m.id ? 'selected' : ''}`}
-              >
-                <div className="list-item-content-wrapper">
-                  <span className="list-item-line1">{m.name}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <Empty description="Профили маппинга отсутствуют." style={{ marginTop: '30px' }} />
-        )}
+        <div className="list-scroll-area">
+          {loadingMappings && <Skeleton active />}
+          {!loadingMappings && mappings.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '20px' }}>
+              <Empty description="Нет сохраненных правил маппинга. Нажмите 'Добавить', чтобы создать новое." />
+            </div>
+          )}
+          {!loadingMappings && mappings.map(mapping => (
+            <div
+              key={mapping.id}
+              className={`list-item ${selectedId === mapping.id ? 'selected' : ''}`}
+              onClick={() => handleSelect(mapping.id)}
+            >
+              <span className="list-item-line1">{mapping.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
-
-      <div className="detail-pane">
-        {selectedId ? (
+      <div className={"detail-pane" + (selectedId ? " custom-scroll-list" : "")}>
+        {!selectedId ? (
+          (mappings.length > 0 && !loadingMappings) ? (
+            <div className="detail-pane-instruction" style={{ paddingLeft: '24px' }}>
+              <InfoCircleOutlined />
+              <p>Выберите правило маппинга из списка слева для просмотра или редактирования, или нажмите «Добавить» для создания нового.</p>
+            </div>
+          ) : (
+            null // Ничего не показываем, если маппинги грузятся или их нет
+          )
+        ) : (
           <>
             <Title level={4} style={{ paddingTop: '16px', marginBottom: '24px', paddingLeft: '24px' }}>
               {selectedId === 'new' 
-                ? 'Новый маппинг' 
-                : (currentMappingData ? `Редактирование маппинга: ${currentMappingData.name}` : 'Загрузка...')}
+                ? 'Новое правило маппинга' 
+                : (mappings.find(m => m.id === selectedId)?.name 
+                    ? `Редактировать правило: ${mappings.find(m => m.id === selectedId)?.name}` 
+                    : 'Редактирование правила')}
             </Title>
+            <div style={{ paddingLeft: '24px', paddingRight: '24px', paddingBottom: '24px' }}>
             <Form
               form={form}
               layout="vertical"
@@ -499,16 +500,8 @@ function FieldMappingPage() {
                 </Space>
               </Form.Item>
             </Form>
+            </div>
           </>
-        ) : mappings.length > 0 && !loadingMappings ? (
-          <div className="detail-pane-instruction" style={{ paddingLeft: '24px' }}>
-            <InfoCircleOutlined />
-            <p>Выберите профиль маппинга из списка для просмотра или редактирования, или нажмите «Добавить» для создания нового.</p>
-          </div>
-        ) : (
-          !loadingMappings && mappings.length === 0 ? (
-             <Empty description="Создайте свой первый профиль маппинга, нажав кнопку 'Добавить'." style={{ marginTop: '60px'}}/>
-          ) : null
         )}
       </div>
     </div>
