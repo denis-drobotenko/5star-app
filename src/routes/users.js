@@ -1,0 +1,15 @@
+const express = require('express');
+const router = express.Router();
+const userController = require('../controllers/userController');
+const auth = require('../middlewares/auth');
+const checkRole = require('../middlewares/roles');
+
+router.use(auth, checkRole(['admin']));
+
+router.get('/', userController.getAll);
+router.get('/:id', userController.getById);
+router.post('/', userController.create);
+router.put('/:id', userController.update);
+router.delete('/:id', userController.remove);
+
+module.exports = router; 

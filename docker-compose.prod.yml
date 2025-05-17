@@ -4,22 +4,18 @@ services:
   frontend:
     build: 
       context: ./src/frontend
-      target: development
-    container_name: app-frontend
+      target: production
+    container_name: app-frontend-prod
     ports:
-      - "5173:5173"
-    volumes:
-      - ./src/frontend:/var/www/app/frontend
-      - /var/www/app/frontend/node_modules
-    command: npm run dev
+      - "80:80"
     networks:
       - appnet
 
   backend:
     build: 
       context: .
-      target: development
-    container_name: app-backend
+      target: production
+    container_name: app-backend-prod
     restart: always
     env_file:
       - .env
@@ -29,15 +25,10 @@ services:
       - appnet
     depends_on:
       - db
-    volumes:
-      - .:/var/www/app
-      - /var/www/app/node_modules
-      - ./logs:/var/www/app/logs
-    command: npm run dev
 
   db:
     image: postgres:15-alpine
-    container_name: app-db
+    container_name: app-db-prod
     restart: always
     environment:
       POSTGRES_DB: app

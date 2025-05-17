@@ -1,6 +1,6 @@
 -- SQL dump generated using DBML (dbml.dbdiagram.io)
 -- Database: PostgreSQL
--- Generated at: 2025-05-11T02:39:19.259Z
+-- Generated at: 2025-05-12T16:43:10.105Z
 
 CREATE TABLE "users" (
   "id" serial PRIMARY KEY,
@@ -108,6 +108,14 @@ CREATE TABLE "blocklists" (
   "user_id" int,
   "phone" varchar NOT NULL,
   "is_deleted" boolean DEFAULT false,
+  "created_at" timestamp DEFAULT (now()),
+  "updated_at" timestamp
+);
+
+CREATE TABLE "clients" (
+  "id" serial PRIMARY KEY,
+  "name" varchar NOT NULL,
+  "logo_url" TEXT,
   "created_at" timestamp DEFAULT (now()),
   "updated_at" timestamp
 );

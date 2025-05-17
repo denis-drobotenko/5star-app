@@ -8,9 +8,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# dotenv
-.env
-.env.*
 
 # Документация и временные файлы
 /docs/AI_FUNCTIONS.md
@@ -27,3 +24,4 @@ docker-compose.override.yml
 # OS
 .DS_Store
 Thumbs.db 
+node_modules

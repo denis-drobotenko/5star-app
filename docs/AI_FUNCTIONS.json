@@ -1,0 +1,396 @@
+{
+  "generated_at": "2025-05-17T14:30:50.689Z",
+  "functions": [
+    {
+      "name": "login",
+      "route": "POST /auth/login",
+      "file": "src/controllers/authController.js",
+      "params": [
+        "email:string",
+        "password:string"
+      ],
+      "returns": [
+        "Object",
+        "Error"
+      ],
+      "description": "Авторизация пользователя (логин)"
+    },
+    {
+      "name": "register",
+      "route": "POST /auth/register",
+      "file": "src/controllers/authController.js",
+      "params": [
+        "email:string",
+        "password:string",
+        "fullName:string",
+        "role:string"
+      ],
+      "returns": [
+        "Object",
+        "Error"
+      ],
+      "description": "Регистрация нового пользователя (только для теста/первого пользователя)"
+    },
+    {
+      "name": "verify",
+      "route": "GET /auth/verify",
+      "file": "src/controllers/authController.js",
+      "params": [],
+      "returns": [
+        "Object",
+        "Error"
+      ],
+      "description": "Проверка валидности токена"
+    },
+    {
+      "name": "getAll",
+      "route": "GET /api/clients",
+      "file": "src/controllers/clientController.js",
+      "params": [],
+      "returns": [
+        "Array.<Client>",
+        "Error"
+      ],
+      "description": "Получить список всех клиентов."
+    },
+    {
+      "name": "getById",
+      "route": "GET /api/clients/:id",
+      "file": "src/controllers/clientController.js",
+      "params": [
+        "id.path.required:integer"
+      ],
+      "returns": [
+        "Client",
+        "Error",
+        "Error"
+      ],
+      "description": "Получить клиента по ID."
+    },
+    {
+      "name": "create",
+      "route": "POST /api/clients",
+      "file": "src/controllers/clientController.js",
+      "params": [
+        "name.formData.required:string",
+        "logoFile.formData:file"
+      ],
+      "returns": [
+        "Client",
+        "Error",
+        "Error"
+      ],
+      "description": "Создать нового клиента."
+    },
+    {
+      "name": "update",
+      "route": "PUT /api/clients/:id",
+      "file": "src/controllers/clientController.js",
+      "params": [
+        "id.path.required:integer",
+        "name.formData:string",
+        "logoFile.formData:file",
+        "removeLogo.formData:string"
+      ],
+      "returns": [
+        "Client",
+        "Error",
+        "Error"
+      ],
+      "description": "Обновить клиента."
+    },
+    {
+      "name": "remove",
+      "route": "DELETE /api/clients/:id",
+      "file": "src/controllers/clientController.js",
+      "params": [
+        "id.path.required:integer"
+      ],
+      "returns": [
+        "object",
+        "Error",
+        "Error",
+        "Error"
+      ],
+      "description": "Удалить клиента."
+    },
+    {
+      "name": "getAll",
+      "route": "GET /api/companies",
+      "file": "src/controllers/companyController.js",
+      "params": [
+        "clientId:integer"
+      ],
+      "returns": [
+        "Array.<Company>",
+        "Error"
+      ],
+      "description": "Получить список всех компаний"
+    },
+    {
+      "name": "getById",
+      "route": "GET /api/companies/:id",
+      "file": "src/controllers/companyController.js",
+      "params": [
+        "id.path.required:integer"
+      ],
+      "returns": [
+        "Company",
+        "Error",
+        "Error"
+      ],
+      "description": "Получить компанию по ID"
+    },
+    {
+      "name": "create",
+      "route": "POST /api/companies",
+      "file": "src/controllers/companyController.js",
+      "params": [
+        "client_id.body.required:integer",
+        "name.body.required:string",
+        "inn.body.required:string",
+        "kpp.body:string",
+        "legal_address.body:string",
+        "postal_address.body:string",
+        "actual_address.body:string",
+        "bank_details.body:string",
+        "edo_provider_name.body:string"
+      ],
+      "returns": [
+        "Company",
+        "Error",
+        "Error"
+      ],
+      "description": "Создать новую компанию (юрлицо клиента)"
+    },
+    {
+      "name": "update",
+      "route": "PUT /api/companies/:id",
+      "file": "src/controllers/companyController.js",
+      "params": [
+        "id.path.required:integer",
+        "body.body:object"
+      ],
+      "returns": [
+        "Company",
+        "Error",
+        "Error",
+        "Error"
+      ],
+      "description": "Обновить компанию (юрлицо клиента)"
+    },
+    {
+      "name": "remove",
+      "route": "DELETE /api/companies/:id",
+      "file": "src/controllers/companyController.js",
+      "params": [
+        "id.path.required:integer"
+      ],
+      "returns": [
+        "object",
+        "Error",
+        "Error"
+      ],
+      "description": "Удалить компанию (юрлицо клиента)"
+    },
+    {
+      "name": "getAll",
+      "route": "GET /api/users",
+      "file": "src/controllers/userController.js",
+      "params": [
+        "clientId:integer",
+        "userType:string"
+      ],
+      "returns": [
+        "Array.<User>",
+        "Error"
+      ],
+      "description": "Получить всех пользователей. Поддерживает фильтрацию по clientId и userType."
+    },
+    {
+      "name": "getById",
+      "route": "GET /api/users/:id",
+      "file": "src/controllers/userController.js",
+      "params": [
+        "id.path.required:integer"
+      ],
+      "returns": [
+        "User",
+        "Error",
+        "Error"
+      ],
+      "description": "Получить пользователя по ID"
+    },
+    {
+      "name": "create",
+      "route": "POST /api/users",
+      "file": "src/controllers/userController.js",
+      "params": [
+        "email.body.required:string",
+        "password.body.required:string",
+        "full_name.body:string",
+        "role.body.required:string",
+        "user_type.body.required:string",
+        "phone.body:string",
+        "position.body:string",
+        "client_id.body:integer",
+        "username.body:string"
+      ],
+      "returns": [
+        "User",
+        "Error",
+        "Error"
+      ],
+      "description": "Создать нового пользователя"
+    },
+    {
+      "name": "update",
+      "route": "PUT /api/users/:id",
+      "file": "src/controllers/userController.js",
+      "params": [
+        "id.path.required:integer",
+        "email.body:string",
+        "password.body:string",
+        "full_name.body:string",
+        "role.body:string",
+        "user_type.body:string",
+        "phone.body:string",
+        "position.body:string",
+        "client_id.body:integer",
+        "is_active.body:boolean",
+        "username.body:string"
+      ],
+      "returns": [
+        "User",
+        "Error",
+        "Error",
+        "Error"
+      ],
+      "description": "Обновить пользователя"
+    },
+    {
+      "name": "remove",
+      "route": "DELETE /api/users/:id",
+      "file": "src/controllers/userController.js",
+      "params": [
+        "id.path.required:integer"
+      ],
+      "returns": [
+        "object",
+        "Error",
+        "Error"
+      ],
+      "description": "Удалить пользователя"
+    }
+  ],
+  "db_schema": {
+    "users": {
+      "id": "serial",
+      "username": "varchar",
+      "password_hash": "varchar",
+      "full_name": "varchar",
+      "email": "varchar",
+      "role": "varchar",
+      "is_active": "boolean",
+      "created_at": "timestamp"
+    },
+    "orders": {
+      "id": "serial",
+      "city": "varchar",
+      "subdivision": "varchar",
+      "pick_up_point": "varchar",
+      "order_number": "varchar",
+      "order_date": "timestamp",
+      "delivery_date": "timestamp",
+      "customer_id": "varchar",
+      "telephone": "varchar",
+      "name": "varchar",
+      "last_name": "varchar",
+      "car_brand": "varchar",
+      "car_model": "varchar",
+      "category": "varchar",
+      "brand": "varchar",
+      "article_number": "varchar",
+      "product": "varchar",
+      "quantity": "int",
+      "revenue": "float",
+      "cost_price": "float",
+      "entry_date": "timestamp",
+      "entry_user": "varchar",
+      "session_id": "varchar"
+    },
+    "companies": {
+      "id": "serial",
+      "name": "varchar",
+      "inn": "varchar",
+      "kpp": "varchar",
+      "legal_address": "varchar",
+      "actual_address": "varchar",
+      "bank_details": "varchar",
+      "contact_persons": "text",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "company_representatives": {
+      "id": "serial",
+      "company_id": "int",
+      "full_name": "varchar",
+      "position": "varchar",
+      "email": "varchar",
+      "phone": "varchar",
+      "created_at": "timestamp"
+    },
+    "field_mappings": {
+      "id": "serial",
+      "company_id": "int",
+      "client_field": "varchar",
+      "system_field": "varchar",
+      "created_at": "timestamp"
+    },
+    "import_history": {
+      "id": "serial",
+      "company_id": "int",
+      "user_id": "int",
+      "file_name": "varchar",
+      "source_type": "varchar",
+      "source_link": "varchar",
+      "status": "varchar",
+      "created_at": "timestamp"
+    },
+    "dictionaries": {
+      "id": "serial",
+      "type": "varchar",
+      "value": "varchar",
+      "extra": "varchar",
+      "user_id": "int",
+      "is_deleted": "boolean",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "aliases": {
+      "id": "serial",
+      "dictionary_id": "int",
+      "alias": "varchar",
+      "user_id": "int",
+      "is_deleted": "boolean",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "blocklists": {
+      "id": "serial",
+      "company_id": "int",
+      "user_id": "int",
+      "phone": "varchar",
+      "is_deleted": "boolean",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    },
+    "clients": {
+      "id": "serial",
+      "name": "varchar",
+      "logo_url": "TEXT",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+}

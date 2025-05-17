@@ -7,33 +7,51 @@
     "doc": "docs"
   },
   "scripts": {
-    "prestart": "npm run docs:ai",
+    "prestart": "npm run docs:ai:json",
+    "predev": "npm run docs:ai:json",
     "db:sql": "pg_dump -U $PGUSER -h $PGHOST -p $PGPORT --schema-only $PGDATABASE > docs/schema.sql",
     "db:dbml": "npx dbml2sql docs/schema.sql -o docs/db.dbml",
-    "db:drop": "dotenv -e .env -- bash -c 'export PGPASSWORD=\"$PGPASSWORD\"; psql -U \"$PGUSER\" -h \"$PGHOST\" -p \"$PGPORT\" -d \"$PGDATABASE\" -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\"'",
-    "db:schema": "dotenv -e .env -- dbml2sql docs/db.dbml -o schema.sql --postgres && dotenv -e .env -- bash -c 'export PGPASSWORD=\"$PGPASSWORD\"; psql -U \"$PGUSER\" -h \"$PGHOST\" -p \"$PGPORT\" -d \"$PGDATABASE\" -f schema.sql'",
-    "db:seed": "dotenv -e .env -- bash -c 'export PGPASSWORD=\"$PGPASSWORD\"; psql -U \"$PGUSER\" -h \"$PGHOST\" -p \"$PGPORT\" -d \"$PGDATABASE\" -f seed.sql'",
+    "db:drop": "dotenv -e .env -- bash -c 'export PGPASSWORD=\"$DB_PASSWORD\"; psql -U \"$DB_USER\" -h \"$DB_HOST\" -p \"$DB_PORT\" -d \"$DB_NAME\" -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\"'",
+    "db:schema": "dotenv -e .env -- dbml2sql docs/db.dbml -o schema.sql --postgres && dotenv -e .env -- bash -c 'export PGPASSWORD=\"$DB_PASSWORD\"; psql -U \"$DB_USER\" -h \"$DB_HOST\" -p \"$DB_PORT\" -d \"$DB_NAME\" -f schema.sql'",
+    "db:seed": "dotenv -e .env -- bash -c 'export PGPASSWORD=\"$DB_PASSWORD\"; psql -U \"$DB_USER\" -h \"$DB_HOST\" -p \"$DB_PORT\" -d \"$DB_NAME\" -f seed.sql'",
     "db:reset": "npm run db:drop && npm run db:schema && npm run db:seed",
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "docs:ai": "jsdoc2md src/**/*.js > docs/AI_FUNCTIONS.md"
+    "dev": "concurrently \"nodemon --delay 5s src/server.js\" \"npm run dev:frontend\"",
+    "dev:backend": "nodemon --delay 5s src/server.js",
+    "dev:frontend": "cd src/frontend && npm run dev -- --host",
+    "docs:ai": "jsdoc2md src/**/*.js > docs/AI_FUNCTIONS.md",
+    "docs:ai:json": "node generate-ai-functions-json.js",
+    "docker:dev": "docker-compose up",
+    "docker:dev:build": "docker-compose up --build",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up",
+    "docker:prod:build": "docker-compose -f docker-compose.prod.yml up --build"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@dbml/cli": "^3.13.5",
+    "concurrently": "^9.1.2",
     "dotenv-cli": "^8.0.0",
     "jsdoc": "^4.0.4",
     "jsdoc-to-markdown": "^8.0.0",
     "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "antd": "^5.25.1",
+    "aws-sdk": "^2.1692.0",
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
     "dotenv": "^16.5.0",
-    "express": "^5.1.0",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
+    "path-to-regexp": "^8.2.0",
     "pg": "^8.15.6",
     "pg-hstore": "^2.3.4",
-    "sequelize": "^6.37.7"
+    "sequelize": "^6.37.7",
+    "winston": "^3.13.0",
+    "xlsx": "^0.18.5"
   }
 }

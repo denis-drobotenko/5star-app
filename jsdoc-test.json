@@ -1,0 +1,1228 @@
+[
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                8,
+                12
+            ],
+            "filename": "authController.js",
+            "lineno": 1,
+            "columnno": 8,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000005",
+                "name": "User",
+                "type": "Identifier",
+                "value": "User"
+            }
+        },
+        "undocumented": true,
+        "name": "User",
+        "longname": "User",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                45,
+                73
+            ],
+            "filename": "authController.js",
+            "lineno": 2,
+            "columnno": 6,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000011",
+                "name": "bcrypt",
+                "type": "CallExpression",
+                "value": ""
+            }
+        },
+        "undocumented": true,
+        "name": "bcrypt",
+        "longname": "bcrypt",
+        "kind": "constant",
+        "scope": "global",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                81,
+                110
+            ],
+            "filename": "authController.js",
+            "lineno": 3,
+            "columnno": 6,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000017",
+                "name": "jwt",
+                "type": "CallExpression",
+                "value": ""
+            }
+        },
+        "undocumented": true,
+        "name": "jwt",
+        "longname": "jwt",
+        "kind": "constant",
+        "scope": "global",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                119,
+                174
+            ],
+            "filename": "authController.js",
+            "lineno": 5,
+            "columnno": 6,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000023",
+                "name": "JWT_SECRET",
+                "type": "LogicalExpression",
+                "value": ""
+            }
+        },
+        "undocumented": true,
+        "name": "JWT_SECRET",
+        "longname": "JWT_SECRET",
+        "kind": "constant",
+        "scope": "global",
+        "params": []
+    },
+    {
+        "comment": "/**\n * Авторизация пользователя (логин)\n * @route POST /auth/login\n * @param {string} email - Email (req.body.email)\n * @param {string} password - Пароль (req.body.password)\n * @returns {Object} 200 - JWT и данные пользователя\n * @returns {Error} 401 - Неверный email или пароль\n */",
+        "meta": {
+            "range": [
+                460,
+                1195
+            ],
+            "filename": "authController.js",
+            "lineno": 15,
+            "columnno": 0,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000032",
+                "name": "login",
+                "type": "FunctionDeclaration",
+                "paramnames": [
+                    "req",
+                    "res"
+                ]
+            },
+            "vars": {
+                "undefined": null,
+                "": null
+            }
+        },
+        "description": "Авторизация пользователя (логин)",
+        "tags": [
+            {
+                "originalTitle": "route",
+                "title": "route",
+                "text": "POST /auth/login",
+                "value": "POST /auth/login"
+            }
+        ],
+        "params": [
+            {
+                "type": {
+                    "names": [
+                        "string"
+                    ]
+                },
+                "description": "Email (req.body.email)",
+                "name": "email"
+            },
+            {
+                "type": {
+                    "names": [
+                        "string"
+                    ]
+                },
+                "description": "Пароль (req.body.password)",
+                "name": "password"
+            }
+        ],
+        "returns": [
+            {
+                "type": {
+                    "names": [
+                        "Object"
+                    ]
+                },
+                "description": "200 - JWT и данные пользователя"
+            },
+            {
+                "type": {
+                    "names": [
+                        "Error"
+                    ]
+                },
+                "description": "401 - Неверный email или пароль"
+            }
+        ],
+        "name": "login",
+        "longname": "login",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                497,
+                502
+            ],
+            "filename": "authController.js",
+            "lineno": 16,
+            "columnno": 10,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000040",
+                "name": "email",
+                "type": "Identifier",
+                "value": "email"
+            }
+        },
+        "undocumented": true,
+        "name": "email",
+        "longname": "email",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                504,
+                512
+            ],
+            "filename": "authController.js",
+            "lineno": 16,
+            "columnno": 17,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000042",
+                "name": "password",
+                "type": "Identifier",
+                "value": "password"
+            }
+        },
+        "undocumented": true,
+        "name": "password",
+        "longname": "password",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                544,
+                560
+            ],
+            "filename": "authController.js",
+            "lineno": 17,
+            "columnno": 17,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000057",
+                "name": "where",
+                "type": "ObjectExpression",
+                "value": "{\"email\":\"\"}"
+            }
+        },
+        "undocumented": true,
+        "name": "where",
+        "longname": "where",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                553,
+                558
+            ],
+            "filename": "authController.js",
+            "lineno": 17,
+            "columnno": 26,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000059",
+                "name": "email",
+                "type": "Identifier",
+                "value": "email"
+            }
+        },
+        "undocumented": true,
+        "name": "email",
+        "longname": "where.email",
+        "kind": "member",
+        "memberof": "where",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                631,
+                667
+            ],
+            "filename": "authController.js",
+            "lineno": 19,
+            "columnno": 47,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000078",
+                "name": "message",
+                "type": "Literal",
+                "value": "Неверный email или пароль"
+            }
+        },
+        "undocumented": true,
+        "name": "message",
+        "longname": "message",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                806,
+                842
+            ],
+            "filename": "authController.js",
+            "lineno": 22,
+            "columnno": 54,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000108",
+                "name": "message",
+                "type": "Literal",
+                "value": "Неверный email или пароль"
+            }
+        },
+        "undocumented": true,
+        "name": "message",
+        "longname": "message",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                863,
+                966
+            ],
+            "filename": "authController.js",
+            "lineno": 23,
+            "columnno": 16,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000111",
+                "name": "token",
+                "type": "CallExpression",
+                "value": ""
+            }
+        },
+        "undocumented": true,
+        "name": "token",
+        "longname": "<anonymous>~token",
+        "kind": "constant",
+        "memberof": "<anonymous>",
+        "scope": "inner",
+        "params": []
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                882,
+                893
+            ],
+            "filename": "authController.js",
+            "lineno": 23,
+            "columnno": 35,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000118",
+                "name": "id",
+                "type": "MemberExpression",
+                "value": "user.id"
+            }
+        },
+        "undocumented": true,
+        "name": "id",
+        "longname": "id",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                895,
+                910
+            ],
+            "filename": "authController.js",
+            "lineno": 23,
+            "columnno": 48,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000122",
+                "name": "role",
+                "type": "MemberExpression",
+                "value": "user.role"
+            }
+        },
+        "undocumented": true,
+        "name": "role",
+        "longname": "role",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                912,
+                929
+            ],
+            "filename": "authController.js",
+            "lineno": 23,
+            "columnno": 65,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000126",
+                "name": "email",
+                "type": "MemberExpression",
+                "value": "user.email"
+            }
+        },
+        "undocumented": true,
+        "name": "email",
+        "longname": "email",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                947,
+                963
+            ],
+            "filename": "authController.js",
+            "lineno": 23,
+            "columnno": 100,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000132",
+                "name": "expiresIn",
+                "type": "Literal",
+                "value": "12h"
+            }
+        },
+        "undocumented": true,
+        "name": "expiresIn",
+        "longname": "expiresIn",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                989,
+                994
+            ],
+            "filename": "authController.js",
+            "lineno": 24,
+            "columnno": 21,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000140",
+                "name": "token",
+                "type": "Identifier",
+                "value": "token"
+            }
+        },
+        "undocumented": true,
+        "name": "token",
+        "longname": "token",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                996,
+                1078
+            ],
+            "filename": "authController.js",
+            "lineno": 24,
+            "columnno": 28,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000142",
+                "name": "user",
+                "type": "ObjectExpression",
+                "value": "{\"id\":\"\",\"email\":\"\",\"fullName\":\"\",\"role\":\"\"}"
+            }
+        },
+        "undocumented": true,
+        "name": "user",
+        "longname": "user",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1004,
+                1015
+            ],
+            "filename": "authController.js",
+            "lineno": 24,
+            "columnno": 36,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000144",
+                "name": "id",
+                "type": "MemberExpression",
+                "value": "user.id"
+            }
+        },
+        "undocumented": true,
+        "name": "id",
+        "longname": "user.id",
+        "kind": "member",
+        "memberof": "user",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1017,
+                1034
+            ],
+            "filename": "authController.js",
+            "lineno": 24,
+            "columnno": 49,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000148",
+                "name": "email",
+                "type": "MemberExpression",
+                "value": "user.email"
+            }
+        },
+        "undocumented": true,
+        "name": "email",
+        "longname": "user.email",
+        "kind": "member",
+        "memberof": "user",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1036,
+                1059
+            ],
+            "filename": "authController.js",
+            "lineno": 24,
+            "columnno": 68,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000152",
+                "name": "fullName",
+                "type": "MemberExpression",
+                "value": "user.fullName"
+            }
+        },
+        "undocumented": true,
+        "name": "fullName",
+        "longname": "user.fullName",
+        "kind": "member",
+        "memberof": "user",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1061,
+                1076
+            ],
+            "filename": "authController.js",
+            "lineno": 24,
+            "columnno": 93,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000156",
+                "name": "role",
+                "type": "MemberExpression",
+                "value": "user.role"
+            }
+        },
+        "undocumented": true,
+        "name": "role",
+        "longname": "user.role",
+        "kind": "member",
+        "memberof": "user",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1143,
+                1168
+            ],
+            "filename": "authController.js",
+            "lineno": 27,
+            "columnno": 41,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000172",
+                "name": "message",
+                "type": "Literal",
+                "value": "Ошибка сервера"
+            }
+        },
+        "undocumented": true,
+        "name": "message",
+        "longname": "message",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1170,
+                1188
+            ],
+            "filename": "authController.js",
+            "lineno": 27,
+            "columnno": 68,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000174",
+                "name": "error",
+                "type": "MemberExpression",
+                "value": "err.message"
+            }
+        },
+        "undocumented": true,
+        "name": "error",
+        "longname": "error",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "/**\n * Регистрация нового пользователя (только для теста/первого пользователя)\n * @route POST /auth/register\n * @param {string} email - Email (req.body.email)\n * @param {string} password - Пароль (req.body.password)\n * @param {string} fullName - ФИО (req.body.fullName)\n * @param {string} role - Роль (req.body.role)\n * @returns {Object} 201 - Данные созданного пользователя\n * @returns {Error} 400 - Email уже существует\n */",
+        "meta": {
+            "range": [
+                1623,
+                2213
+            ],
+            "filename": "authController.js",
+            "lineno": 40,
+            "columnno": 0,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000178",
+                "name": "register",
+                "type": "FunctionDeclaration",
+                "paramnames": [
+                    "req",
+                    "res"
+                ]
+            },
+            "vars": {
+                "undefined": null,
+                "": null
+            }
+        },
+        "description": "Регистрация нового пользователя (только для теста/первого пользователя)",
+        "tags": [
+            {
+                "originalTitle": "route",
+                "title": "route",
+                "text": "POST /auth/register",
+                "value": "POST /auth/register"
+            }
+        ],
+        "params": [
+            {
+                "type": {
+                    "names": [
+                        "string"
+                    ]
+                },
+                "description": "Email (req.body.email)",
+                "name": "email"
+            },
+            {
+                "type": {
+                    "names": [
+                        "string"
+                    ]
+                },
+                "description": "Пароль (req.body.password)",
+                "name": "password"
+            },
+            {
+                "type": {
+                    "names": [
+                        "string"
+                    ]
+                },
+                "description": "ФИО (req.body.fullName)",
+                "name": "fullName"
+            },
+            {
+                "type": {
+                    "names": [
+                        "string"
+                    ]
+                },
+                "description": "Роль (req.body.role)",
+                "name": "role"
+            }
+        ],
+        "returns": [
+            {
+                "type": {
+                    "names": [
+                        "Object"
+                    ]
+                },
+                "description": "201 - Данные созданного пользователя"
+            },
+            {
+                "type": {
+                    "names": [
+                        "Error"
+                    ]
+                },
+                "description": "400 - Email уже существует"
+            }
+        ],
+        "name": "register",
+        "longname": "register",
+        "kind": "function",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1663,
+                1668
+            ],
+            "filename": "authController.js",
+            "lineno": 41,
+            "columnno": 10,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000186",
+                "name": "email",
+                "type": "Identifier",
+                "value": "email"
+            }
+        },
+        "undocumented": true,
+        "name": "email",
+        "longname": "email",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1670,
+                1678
+            ],
+            "filename": "authController.js",
+            "lineno": 41,
+            "columnno": 17,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000188",
+                "name": "password",
+                "type": "Identifier",
+                "value": "password"
+            }
+        },
+        "undocumented": true,
+        "name": "password",
+        "longname": "password",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1680,
+                1688
+            ],
+            "filename": "authController.js",
+            "lineno": 41,
+            "columnno": 27,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000190",
+                "name": "fullName",
+                "type": "Identifier",
+                "value": "fullName"
+            }
+        },
+        "undocumented": true,
+        "name": "fullName",
+        "longname": "fullName",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1690,
+                1694
+            ],
+            "filename": "authController.js",
+            "lineno": 41,
+            "columnno": 37,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000192",
+                "name": "role",
+                "type": "Identifier",
+                "value": "role"
+            }
+        },
+        "undocumented": true,
+        "name": "role",
+        "longname": "role",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1726,
+                1742
+            ],
+            "filename": "authController.js",
+            "lineno": 42,
+            "columnno": 17,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000207",
+                "name": "where",
+                "type": "ObjectExpression",
+                "value": "{\"email\":\"\"}"
+            }
+        },
+        "undocumented": true,
+        "name": "where",
+        "longname": "where",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1735,
+                1740
+            ],
+            "filename": "authController.js",
+            "lineno": 42,
+            "columnno": 26,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000209",
+                "name": "email",
+                "type": "Identifier",
+                "value": "email"
+            }
+        },
+        "undocumented": true,
+        "name": "email",
+        "longname": "where.email",
+        "kind": "member",
+        "memberof": "where",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1816,
+                1868
+            ],
+            "filename": "authController.js",
+            "lineno": 44,
+            "columnno": 48,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000227",
+                "name": "message",
+                "type": "Literal",
+                "value": "Пользователь с таким email уже существует"
+            }
+        },
+        "undocumented": true,
+        "name": "message",
+        "longname": "message",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1948,
+                1953
+            ],
+            "filename": "authController.js",
+            "lineno": 46,
+            "columnno": 36,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000248",
+                "name": "email",
+                "type": "Identifier",
+                "value": "email"
+            }
+        },
+        "undocumented": true,
+        "name": "email",
+        "longname": "email",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1955,
+                1969
+            ],
+            "filename": "authController.js",
+            "lineno": 46,
+            "columnno": 43,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000250",
+                "name": "password",
+                "type": "Identifier",
+                "value": "hash"
+            }
+        },
+        "undocumented": true,
+        "name": "password",
+        "longname": "password",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1971,
+                1979
+            ],
+            "filename": "authController.js",
+            "lineno": 46,
+            "columnno": 59,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000252",
+                "name": "fullName",
+                "type": "Identifier",
+                "value": "fullName"
+            }
+        },
+        "undocumented": true,
+        "name": "fullName",
+        "longname": "fullName",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                1981,
+                1985
+            ],
+            "filename": "authController.js",
+            "lineno": 46,
+            "columnno": 69,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000254",
+                "name": "role",
+                "type": "Identifier",
+                "value": "role"
+            }
+        },
+        "undocumented": true,
+        "name": "role",
+        "longname": "role",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2035,
+                2046
+            ],
+            "filename": "authController.js",
+            "lineno": 47,
+            "columnno": 45,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000268",
+                "name": "id",
+                "type": "MemberExpression",
+                "value": "user.id"
+            }
+        },
+        "undocumented": true,
+        "name": "id",
+        "longname": "id",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2048,
+                2065
+            ],
+            "filename": "authController.js",
+            "lineno": 47,
+            "columnno": 58,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000272",
+                "name": "email",
+                "type": "MemberExpression",
+                "value": "user.email"
+            }
+        },
+        "undocumented": true,
+        "name": "email",
+        "longname": "email",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2067,
+                2090
+            ],
+            "filename": "authController.js",
+            "lineno": 47,
+            "columnno": 77,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000276",
+                "name": "fullName",
+                "type": "MemberExpression",
+                "value": "user.fullName"
+            }
+        },
+        "undocumented": true,
+        "name": "fullName",
+        "longname": "fullName",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2092,
+                2107
+            ],
+            "filename": "authController.js",
+            "lineno": 47,
+            "columnno": 102,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000280",
+                "name": "role",
+                "type": "MemberExpression",
+                "value": "user.role"
+            }
+        },
+        "undocumented": true,
+        "name": "role",
+        "longname": "role",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2161,
+                2186
+            ],
+            "filename": "authController.js",
+            "lineno": 49,
+            "columnno": 41,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000296",
+                "name": "message",
+                "type": "Literal",
+                "value": "Ошибка сервера"
+            }
+        },
+        "undocumented": true,
+        "name": "message",
+        "longname": "message",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2188,
+                2206
+            ],
+            "filename": "authController.js",
+            "lineno": 49,
+            "columnno": 68,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000298",
+                "name": "error",
+                "type": "MemberExpression",
+                "value": "err.message"
+            }
+        },
+        "undocumented": true,
+        "name": "error",
+        "longname": "error",
+        "kind": "member",
+        "scope": "global"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2215,
+                2251
+            ],
+            "filename": "authController.js",
+            "lineno": 52,
+            "columnno": 0,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000303",
+                "name": "module.exports",
+                "type": "ObjectExpression",
+                "value": "{\"login\":\"\",\"register\":\"\"}",
+                "paramnames": []
+            }
+        },
+        "undocumented": true,
+        "name": "exports",
+        "longname": "module.exports",
+        "kind": "member",
+        "memberof": "module",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2234,
+                2239
+            ],
+            "filename": "authController.js",
+            "lineno": 52,
+            "columnno": 19,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000308",
+                "name": "login",
+                "type": "Identifier",
+                "value": "login"
+            }
+        },
+        "undocumented": true,
+        "name": "login",
+        "longname": "module.exports.login",
+        "kind": "member",
+        "memberof": "module.exports",
+        "scope": "static"
+    },
+    {
+        "comment": "",
+        "meta": {
+            "range": [
+                2241,
+                2249
+            ],
+            "filename": "authController.js",
+            "lineno": 52,
+            "columnno": 26,
+            "path": "/var/www/app/src/controllers",
+            "code": {
+                "id": "astnode100000310",
+                "name": "register",
+                "type": "Identifier",
+                "value": "register"
+            }
+        },
+        "undocumented": true,
+        "name": "register",
+        "longname": "module.exports.register",
+        "kind": "member",
+        "memberof": "module.exports",
+        "scope": "static"
+    },
+    {
+        "kind": "package",
+        "longname": "package:undefined",
+        "files": [
+            "/var/www/app/src/controllers/authController.js"
+        ]
+    }
+]
