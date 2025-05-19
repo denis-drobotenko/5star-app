@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-05-17T14:30:50.689Z",
+  "generated_at": "2025-05-19T15:47:22.741Z",
   "functions": [
     {
       "name": "login",
@@ -41,6 +41,35 @@
         "Error"
       ],
       "description": "Проверка валидности токена"
+    },
+    {
+      "name": "requestPasswordReset",
+      "route": "POST /auth/request-password-reset",
+      "file": "src/controllers/authController.js",
+      "params": [
+        "email:string"
+      ],
+      "returns": [
+        "Object",
+        "Error",
+        "Error"
+      ],
+      "description": "Запрос на сброс пароля."
+    },
+    {
+      "name": "resetPassword",
+      "route": "POST /auth/reset-password",
+      "file": "src/controllers/authController.js",
+      "params": [
+        "token:string",
+        "password:string"
+      ],
+      "returns": [
+        "Object",
+        "Error",
+        "Error"
+      ],
+      "description": "Сброс пароля пользователя."
     },
     {
       "name": "getAll",
@@ -194,6 +223,33 @@
       "description": "Удалить компанию (юрлицо клиента)"
     },
     {
+      "name": "uploadSample",
+      "route": "POST /api/field-mappings/upload-sample",
+      "file": "src/controllers/fieldMappingController.js",
+      "params": [
+        "req.body.required:object"
+      ],
+      "returns": [
+        "object",
+        "Error"
+      ],
+      "description": "Загрузить пример данных в S3."
+    },
+    {
+      "name": "getSignedUrl",
+      "route": "GET /api/field-mappings/get-signed-url",
+      "file": "src/controllers/fieldMappingController.js",
+      "params": [
+        "key.query.required:string"
+      ],
+      "returns": [
+        "object",
+        "Error",
+        "Error"
+      ],
+      "description": "Получить подписанный URL для доступа к файлу в S3."
+    },
+    {
       "name": "getAll",
       "route": "GET /api/users",
       "file": "src/controllers/userController.js",
@@ -306,6 +362,7 @@
       "telephone": "varchar",
       "name": "varchar",
       "last_name": "varchar",
+      "birthday": "date",
       "car_brand": "varchar",
       "car_model": "varchar",
       "category": "varchar",

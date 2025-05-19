@@ -1,6 +1,6 @@
 require('dotenv').config();
 const { Sequelize } = require('sequelize');
-// const logger = require('./logger'); // logger больше не нужен здесь для logging: false
+const logger = require('./logger'); // Раскомментируем и используем logger
 
 const sequelize = new Sequelize(
   process.env.DB_NAME || 'app',
@@ -10,8 +10,19 @@ const sequelize = new Sequelize(
     host: process.env.DB_HOST || 'db',
     port: process.env.DB_PORT || 5432,
     dialect: 'postgres',
-    // logging: msg => logger.debug(msg), // Заменяем на false
-    logging: false, // Полностью отключаем логирование SQL-запросов Sequelize
+    benchmark: true, // Включаем бенчмаркинг для получения времени выполнения в объекте метаданных
+    logging: (sql, timingOrMetadata) => {
+      if (typeof timingOrMetadata === 'number') {
+        // Это прямой замер времени, если Sequelize его предоставляет
+        // logger.debug(`[Sequelize] Execution time: ${timingOrMetadata}ms --- Query: ${sql}`);
+      } else if (timingOrMetadata && typeof timingOrMetadata === 'object' && typeof timingOrMetadata.duration === 'number') {
+        // Если включен benchmark: true, Sequelize передает объект с полем duration
+        // logger.debug(`[Sequelize] Execution time: ${timingOrMetadata.duration}ms --- Query: ${sql}`);
+      } else {
+        // Для других сообщений Sequelize или если время не доступно напрямую
+        // logger.debug(`[Sequelize] Query: ${sql}`);
+      }
+    },
     pool: {
       max: 5,
       min: 0,

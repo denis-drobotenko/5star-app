@@ -25,6 +25,7 @@ CREATE TABLE "orders" (
   "telephone" varchar,
   "name" varchar,
   "last_name" varchar,
+  "birthday" date,
   "car_brand" varchar,
   "car_model" varchar,
   "category" varchar,

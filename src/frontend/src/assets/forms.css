@@ -1,0 +1,18 @@
+.form-item-spacing {
+  margin-bottom: 16px !important; /* Меньший отступ */
+}
+
+.page-title {
+  /* Стили для заголовка страницы */
+  margin: 0 !important;
+  flex: 1;
+}
+
+.form-footer {
+  /* Стили для нижней части формы с кнопками */
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+} 

@@ -9,17 +9,17 @@ const FieldMapping = require('./fieldMapping');
 // Связи для Client
 Client.hasMany(Company, { foreignKey: 'client_id', as: 'companies' });
 Client.hasMany(User, { foreignKey: 'client_id', as: 'users' });
+Client.hasMany(FieldMapping, { foreignKey: 'client_id', as: 'fieldMappings' });
 
 // Связи для Company
 Company.belongsTo(Client, { foreignKey: 'client_id', as: 'client' });
-Company.hasMany(FieldMapping, { foreignKey: 'company_id', as: 'fieldMappings' });
 
 // Связи для User
 User.belongsTo(Client, { foreignKey: 'client_id', as: 'client' });
 User.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
 
 // Связи для FieldMapping
-FieldMapping.belongsTo(Company, { foreignKey: 'company_id', as: 'company' });
+FieldMapping.belongsTo(Client, { foreignKey: 'client_id', as: 'client' });
 
 // Синхронизируем модели с БД
 const syncModels = async () => {

@@ -7,11 +7,11 @@ const FieldMapping = sequelize.define('FieldMapping', {
     primaryKey: true,
     autoIncrement: true
   },
-  company_id: {
+  client_id: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'companies',
+      model: 'clients',
       key: 'id'
     }
   },
@@ -22,6 +22,11 @@ const FieldMapping = sequelize.define('FieldMapping', {
   mapping: {
     type: DataTypes.JSONB,
     allowNull: false
+  },
+  sample_data_url: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'URL файла с примером данных в S3'
   },
   created_at: {
     type: DataTypes.DATE,
@@ -39,13 +44,17 @@ const FieldMapping = sequelize.define('FieldMapping', {
   underscored: true,
   indexes: [
     {
-      name: 'idx_field_mappings_company_id',
-      fields: ['company_id']
+      name: 'idx_field_mappings_client_id',
+      fields: ['client_id']
     },
     {
       name: 'idx_field_mappings_mapping',
       using: 'gin',
       fields: ['mapping']
+    },
+    {
+      name: 'idx_field_mappings_sample_data_url',
+      fields: ['sample_data_url']
     }
   ]
 });

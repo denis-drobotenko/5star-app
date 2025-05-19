@@ -24,6 +24,7 @@ import ClientsPage from './pages/ClientsPage'
 import ClientUsersPage from './pages/UsersPage'
 import FieldMappingPage from './pages/FieldMappingPage'
 import SettingsPage from './pages/SettingsPage'
+import ResetPasswordPage from './pages/ResetPasswordPage'
 
 const { Title, Paragraph } = Typography;
 const { Header, Content, Sider } = Layout;
@@ -109,6 +110,7 @@ function App() {
           <AuthProvider>
             <Routes>
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route 
                   path="/dashboard/*" 
                   element={

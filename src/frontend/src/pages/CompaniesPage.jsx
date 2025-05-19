@@ -46,13 +46,15 @@ function CompaniesPage() {
   const selectedCompany = selectedId && selectedId !== 'new' ? companies.find(c => c.id === selectedId) : null;
 
   useEffect(() => {
-    if (selectedCompany) {
-      form.setFieldsValue(selectedCompany);
-    } else if (selectedId === 'new') {
-      form.resetFields();
-    } else {
-      form.resetFields(); 
-    }
+    requestAnimationFrame(() => {
+      if (selectedCompany) {
+        form.setFieldsValue(selectedCompany);
+      } else if (selectedId === 'new') {
+        form.resetFields();
+      } else {
+        form.resetFields(); 
+      }
+    });
   }, [selectedId, selectedCompany, form]);
 
   const handleSelect = (id) => setSelectedId(id);

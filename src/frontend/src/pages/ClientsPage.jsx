@@ -36,45 +36,43 @@ function ClientsPage() {
   const selectedClientData = selectedId && selectedId !== 'new' ? clients.find(c => c.id === selectedId) : null;
 
   useEffect(() => {
-    setTimeout(() => {
-      if (selectedId === 'new') {
-        form.resetFields();
-        setLogoPreview(null);
-        setSelectedLogoFile(null);
-        setShouldRemoveLogo(false);
-        form.setFieldsValue({ logoFile: [] });
-      } else if (selectedClientData) {
-        form.setFieldsValue({ name: selectedClientData.name });
-        if (selectedClientData.logo_url && typeof selectedClientData.logo_url === 'string' && selectedClientData.logo_url.trim() !== '') {
-          const logoUrl = selectedClientData.logo_url.trim();
-          setLogoPreview(logoUrl);
+    if (selectedId === 'new') {
+      form.resetFields();
+      setLogoPreview(null);
+      setSelectedLogoFile(null);
+      setShouldRemoveLogo(false);
+      form.setFieldsValue({ logoFile: [] });
+    } else if (selectedClientData) {
+      form.setFieldsValue({ name: selectedClientData.name });
+      if (selectedClientData.logo_url && typeof selectedClientData.logo_url === 'string' && selectedClientData.logo_url.trim() !== '') {
+        const logoUrl = selectedClientData.logo_url.trim();
+        setLogoPreview(logoUrl);
 
-          const fileName = logoUrl.substring(logoUrl.lastIndexOf('/') + 1) || 'logo.png';
-          const fileUid = `client-${selectedClientData.id}-${fileName}-${Date.now()}`;
+        const fileName = logoUrl.substring(logoUrl.lastIndexOf('/') + 1) || 'logo.png';
+        const fileUid = `client-${selectedClientData.id}-${fileName}-${Date.now()}`;
 
-          const existingLogo = [{
-            uid: fileUid,
-            name: fileName,
-            status: 'done',
-            url: logoUrl,
-            thumbUrl: logoUrl,
-          }];
-          
-          form.setFieldsValue({ logoFile: existingLogo });
-        } else {
-          setLogoPreview(null);
-          form.setFieldsValue({ logoFile: [] });
-        }
-        setSelectedLogoFile(null);
-        setShouldRemoveLogo(false);
-      } else if (!selectedId) {
-        form.resetFields();
+        const existingLogo = [{
+          uid: fileUid,
+          name: fileName,
+          status: 'done',
+          url: logoUrl,
+          thumbUrl: logoUrl,
+        }];
+        
+        form.setFieldsValue({ logoFile: existingLogo });
+      } else {
         setLogoPreview(null);
-        setSelectedLogoFile(null);
-        setShouldRemoveLogo(false);
         form.setFieldsValue({ logoFile: [] });
       }
-    }, 0);
+      setSelectedLogoFile(null);
+      setShouldRemoveLogo(false);
+    } else if (!selectedId) {
+      form.resetFields();
+      setLogoPreview(null);
+      setSelectedLogoFile(null);
+      setShouldRemoveLogo(false);
+      form.setFieldsValue({ logoFile: [] });
+    }
   }, [selectedId, selectedClientData, form]);
 
   const handleAdd = () => {

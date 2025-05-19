@@ -13,7 +13,8 @@ const Company = sequelize.define('Company', {
     references: {
       model: 'clients',
       key: 'id'
-    }
+    },
+    index: true
   },
   name: {
     type: DataTypes.STRING,

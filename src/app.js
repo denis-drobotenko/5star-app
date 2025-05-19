@@ -1,16 +1,16 @@
+// Загружаем переменные окружения первыми
+require('dotenv').config();
+
 const express = require('express');
 const path = require('path');
 const logger = require('./config/logger');
+const migrationManager = require('./utils/migrations');
 
 // logger.info('[App.js] Script execution STARTED.');
 
 // logger.info('[App.js] Requiring ./models...');
 const { sequelize, syncModels } = require('./models');
 // logger.info('[App.js] ./models REQUIRED.');
-
-// logger.info('[App.js] Requiring dotenv...');
-require('dotenv').config();
-// logger.info('[App.js] dotenv REQUIRED and configured.');
 
 // logger.info('[App.js] Requiring cors...');
 const cors = require('cors');
@@ -55,14 +55,12 @@ const app = express();
 app.use(cors());
 // logger.info('[App.js] CORS middleware configured.');
 
-// Middleware для логирования запросов (пример)
-// logger.info('[App.js] Attempting to use request logging middleware...');
+// Middleware для логирования всех запросов
 app.use((req, res, next) => {
-  logger.info(`[App.js - RequestLogger] INCOMING: ${req.method} ${req.url} from ${req.ip}`);
+  // logger.info(`[App.js - RequestLogger] INCOMING: ${req.method} ${req.url} from ${req.ip}`); // Закомментировано для уменьшения количества логов
   // logger.info(`[App.js - RequestLogger] Headers: ${JSON.stringify(req.headers)}`); // Закомментировано, т.к. может быть слишком многословно
   next();
 });
-// logger.info('[App.js] Request logging middleware configured.');
 
 // Увеличиваем лимиты для больших файлов
 // logger.info('[App.js] Attempting to use express.json middleware...');
@@ -81,7 +79,7 @@ app.use('/api/companies', companiesRoutes);
 app.use('/api/xlsx', xlsxRoutes);
 app.use('/api/field-mappings', fieldMappingsRoutes);
 app.use('/api/clients', clientRoutes);
-app.use('/api', debugRoutes);
+app.use('/api/debug', debugRoutes);
 // logger.info('[App.js] API routes configured.');
 
 // Делаем документацию JSDoc доступной по /docs
@@ -125,11 +123,16 @@ app.use((err, req, res, next) => {
 });
 // logger.info('[App.js] Global error handler configured.');
 
-// Проверка подключения к БД и синхронизация моделей при запуске
+// Проверка подключения к БД, запуск миграций и синхронизация моделей при запуске
 // logger.info('[App.js] Starting database authentication and model synchronization...');
 sequelize.authenticate()
   .then(() => {
     // logger.info('[App.js] Database authentication SUCCESSFUL.');
+    // Сначала запускаем миграции
+    return migrationManager.runMigrations();
+  })
+  .then(() => {
+    // После успешного применения миграций синхронизируем модели
     // logger.info('[App.js] Attempting to sync models...');
     return syncModels();
   })

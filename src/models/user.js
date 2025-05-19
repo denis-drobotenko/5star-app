@@ -57,7 +57,8 @@ const User = sequelize.define('User', {
     references: {
       model: 'clients',
       key: 'id'
-    }
+    },
+    index: true
   },
   company_id: {
     type: DataTypes.INTEGER,
@@ -65,7 +66,16 @@ const User = sequelize.define('User', {
     references: {
       model: 'companies',
       key: 'id'
-    }
+    },
+    index: true
+  },
+  reset_password_token: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  reset_password_expires_at: {
+    type: DataTypes.DATE,
+    allowNull: true,
   },
   created_at: {
     type: DataTypes.DATE,
