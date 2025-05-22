@@ -202,6 +202,7 @@ function LoginPage() {
             Отправить ссылку для сброса
           </Button>,
         ]}
+        destroyOnHidden
       >
         <Form
           form={forgotPasswordForm}

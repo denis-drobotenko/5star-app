@@ -12,14 +12,12 @@ const sequelize = new Sequelize(
     dialect: 'postgres',
     benchmark: true, // Включаем бенчмаркинг для получения времени выполнения в объекте метаданных
     logging: (sql, timingOrMetadata) => {
+      // Расширенное логирование для лучшего понимания запросов и времени их выполнения
       if (typeof timingOrMetadata === 'number') {
-        // Это прямой замер времени, если Sequelize его предоставляет
         // logger.debug(`[Sequelize] Execution time: ${timingOrMetadata}ms --- Query: ${sql}`);
-      } else if (timingOrMetadata && typeof timingOrMetadata === 'object' && typeof timingOrMetadata.duration === 'number') {
-        // Если включен benchmark: true, Sequelize передает объект с полем duration
+      } else if (typeof timingOrMetadata === 'object' && timingOrMetadata !== null && 'duration' in timingOrMetadata) {
         // logger.debug(`[Sequelize] Execution time: ${timingOrMetadata.duration}ms --- Query: ${sql}`);
       } else {
-        // Для других сообщений Sequelize или если время не доступно напрямую
         // logger.debug(`[Sequelize] Query: ${sql}`);
       }
     },

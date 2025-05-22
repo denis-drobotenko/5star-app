@@ -21,16 +21,8 @@ function checkRole(requiredRolesArray) {
 
     if (roleExists) {
       roleUpper = req.user.role.toUpperCase().trim();
-      // logger.debug(`[AuthCheckDetails] roleUpper: '${roleUpper}' (length: ${roleUpper.length}), typeof roleUpper: ${typeof roleUpper}`);
-      // logger.debug(`[AuthCheckDetails] requiredRolesArray: ${JSON.stringify(requiredRolesArray)}, typeof requiredRolesArray: ${typeof requiredRolesArray}, isArray: ${Array.isArray(requiredRolesArray)}`);
-      
-      // requiredRolesArray.forEach((role, index) => {
-      //   logger.debug(`[AuthCheckDetails] requiredRolesArray[${index}]: '${String(role)}' (length: String(role).length), typeof: ${typeof role}`);
-      // });
       isIncluded = requiredRolesArray.map(r => String(r).trim().toUpperCase()).includes(roleUpper);
     }
-
-    // logger.debug(`[AuthCheck] User ID: ${userExists ? req.user.id : 'N/A'}, Original Role: ${roleExists ? req.user.role : 'N/A'}, Uppercase Role: ${roleUpper || 'N/A'}, Required: ${requiredRolesArray.join(', ')}, Included: ${isIncluded}`);
 
     if (!userExists || !roleExists || !isIncluded) {
       const userId = userExists ? req.user.id : 'unknown';

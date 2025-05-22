@@ -1,6 +1,17 @@
 const { User, Client } = require('../models');
 const bcrypt = require('bcryptjs');
 const { Op } = require('sequelize');
+const logger = require('../config/logger');
+const {
+  validateBody,
+  validateParams,
+  validateQuery,
+  createUserSchema,
+  updateUserSchema,
+  userIdSchema,
+  getAllUsersSchema,
+} = require('../middlewares/validators/userValidator');
+const userService = require('../services/userService');
 
 /**
  * Получить всех пользователей. Поддерживает фильтрацию по clientId и userType.
@@ -11,7 +22,11 @@ const { Op } = require('sequelize');
  * @returns {Array<User>} 200 - Список пользователей
  * @returns {Error} 500 - Ошибка сервера
  */
-async function getAll(req, res) {
+async function getAll(req, res, next) {
+  logger.info('[UserController.getAll] Request to get all users. Query params: %o. Requesting user: %o', 
+    req.query, 
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
   try {
     const { clientId, userType } = req.query;
     const whereClause = {};
@@ -28,10 +43,15 @@ async function getAll(req, res) {
       attributes: { exclude: ['password_hash'] },
       include: [{ model: Client, as: 'client', attributes: ['id', 'name'] }]
     });
-    res.json(users);
+    logger.debug('[UserController.getAll] Found %d users. Sending response.', users.length);
+    res.status(200).json(users);
   } catch (error) {
-    console.error('Ошибка при получении пользователей:', error);
-    res.status(500).json({ message: 'Ошибка сервера при получении пользователей' });
+    logger.error('[UserController.getAll] Failed to get all users. Error: %s', error.message, {
+      error: error, // Winston извлечет stack, message и т.д.
+      requestQuery: req.query,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+    next(error); // Передаем ошибку в глобальный обработчик Express
   }
 }
 
@@ -44,19 +64,37 @@ async function getAll(req, res) {
  * @returns {Error} 404 - Пользователь не найден
  * @returns {Error} 500 - Ошибка сервера
  */
-async function getById(req, res) {
+async function getById(req, res, next) {
+  logger.info(`[UserController.getById] Request to get user by ID: ${req.params.id}. Requesting user: %o`, 
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
   try {
     const user = await User.findByPk(req.params.id, {
       attributes: { exclude: ['password_hash'] },
       include: [{ model: Client, as: 'client', attributes: ['id', 'name'] }]
     });
     if (!user) {
+      logger.warn(`[UserController.getById] User not found for ID: ${req.params.id}`);
       return res.status(404).json({ message: 'Пользователь не найден' });
     }
-    res.json(user);
+    
+    // Убедимся, что пароль точно удален перед отправкой
+    const userResponse = { ...user.toJSON() };
+    delete userResponse.password_hash;
+
+    logger.debug('[UserController.getById] User found and sending response for ID %s: %o', req.params.id, userResponse);
+    res.json(userResponse);
   } catch (error) {
-    console.error(`Ошибка при получении пользователя ${req.params.id}:`, error);
-    res.status(500).json({ message: 'Ошибка сервера при получении пользователя' });
+    logger.error(`[UserController.getById] Failed to get user by ID ${req.params.id}. Error: ${error.message}`, {
+      errorDetails: {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      },
+      userIdParam: req.params.id,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+    next(error); // Передаем ошибку в глобальный обработчик Express
   }
 }
 
@@ -77,45 +115,48 @@ async function getById(req, res) {
  * @returns {Error} 400 - Некорректные данные или пользователь уже существует
  * @returns {Error} 500 - Ошибка сервера
  */
-async function create(req, res) {
+async function create(req, res, next) {
+  // Маскируем пароль для логирования
+  const { password, ...bodyToLog } = req.body;
+  logger.info('[UserController.create] Attempting to create user. Body: %o. Requesting user: %o', 
+    bodyToLog, 
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
+
   const {
-    email, password, full_name, role, 
+    email,
+    full_name, role, 
     user_type, phone, position, client_id
   } = req.body;
 
-  if (!email || !password || !role || !user_type) {
-    return res.status(400).json({ message: 'Пожалуйста, заполните все обязательные поля: email, password, role, user_type' });
-  }
-
-  if (user_type === 'CLIENT' && !client_id) {
-    return res.status(400).json({ message: 'Для пользователя типа CLIENT необходимо указать client_id' });
-  }
-  if (user_type === 'INTERNAL' && client_id) {
-    // Для внутренних пользователей client_id должен быть null, но мы можем просто его проигнорировать или установить в null
-    // В данном случае, если он передан, модель его запишет. Можно добавить логику для установки в null.
-  }
+  // Удалена старая ручная валидация, теперь используется Joi
+  // if (!email || !password || !role || !user_type) { ... }
+  // if (user_type === 'CLIENT' && !client_id) { ... }
 
   try {
     const existingEmail = await User.findOne({ where: { email } });
     if (existingEmail) {
+      logger.warn('[UserController.create] User with email %s already exists.', email);
       return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
     }
 
     if (user_type === 'CLIENT' && client_id) {
       const client = await Client.findByPk(client_id);
       if (!client) {
+        logger.warn('[UserController.create] Client with ID %s not found for CLIENT user type.', client_id);
         return res.status(400).json({ message: `Клиент с ID ${client_id} не найден` });
       }
     }
 
     const password_hash = await bcrypt.hash(password, 10);
     const newUser = await User.create({
+      username: email, // Используем email как username
       email,
       password_hash,
       full_name,
       role,
       user_type,
-      phone,
+      phone: user_type === 'INTERNAL' ? phone : null, // Телефон только для INTERNAL
       position: user_type === 'CLIENT' ? position : null,
       client_id: user_type === 'CLIENT' ? client_id : null,
       is_active: true
@@ -123,14 +164,19 @@ async function create(req, res) {
 
     const userResponse = { ...newUser.toJSON() };
     delete userResponse.password_hash;
-
+    logger.debug('[UserController.create] User created successfully with ID %s: %o', newUser.id, userResponse);
     res.status(201).json(userResponse);
   } catch (error) {
-    console.error('Ошибка при создании пользователя:', error);
     if (error.name === 'SequelizeValidationError') {
+      logger.warn('[UserController.create] Sequelize validation error: %s. Errors: %o', error.message, error.errors.map(e => e.message));
       return res.status(400).json({ message: 'Ошибка валидации: ' + error.errors.map(e => e.message).join(', ') });
     }
-    res.status(500).json({ message: 'Ошибка сервера при создании пользователя' });
+    logger.error('[UserController.create] Failed to create user. Error: %s', error.message, {
+      error: error,
+      requestBody: bodyToLog, // Логируем тело запроса без пароля
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+    next(error); // Передаем ошибку в глобальный обработчик Express
   }
 }
 
@@ -154,98 +200,38 @@ async function create(req, res) {
  * @returns {Error} 404 - Пользователь не найден
  * @returns {Error} 500 - Ошибка сервера
  */
-async function update(req, res) {
+async function update(req, res, next) {
   const userId = req.params.id;
-  const {
-    email, password, full_name, role, 
-    user_type, phone, position, client_id, is_active
-  } = req.body;
+  // req.body провалидирован updateUserSchema
+  const updateData = req.body;
+  const { password, ...bodyToLog } = req.body;
+
+  logger.info('[UserController.update] Attempting to update user ID %s. Body: %o. Requesting user: %o', 
+    userId, 
+    bodyToLog, 
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
 
   try {
-    const user = await User.findByPk(userId);
-    if (!user) {
-      return res.status(404).json({ message: 'Пользователь не найден' });
-    }
+    const updatedUser = await userService.updateUser(userId, updateData);
+    logger.info('[UserController.update] User ID %s updated successfully by service.', userId);
+    res.json(updatedUser);
 
-    if (email && email !== user.email) {
-      const existingEmailOrUsername = await User.findOne({
-        where: {
-          [Op.or]: [
-            { email: email }, 
-            { username: email } 
-          ],
-          id: { [Op.ne]: userId } 
-        }
-      });
-
-      if (existingEmailOrUsername) {
-        return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
-      }
-      user.email = email;
-      user.username = email;
-    } else if (email && email !== user.email) {
-      return res.status(400).json({ message: 'Имя пользователя (email) должно совпадать с username и не может быть изменено отдельно.' });
-    }
-
-    if (full_name !== undefined) user.full_name = full_name;
-    if (role) user.role = role;
-    if (phone !== undefined) user.phone = phone;
-    if (is_active !== undefined) user.is_active = is_active;
-
-    if (user_type) {
-      if (user_type === 'CLIENT') {
-        if (client_id !== undefined) {
-          if (client_id === null) {
-            user.client_id = null;
-          } else {
-            const client = await Client.findByPk(client_id);
-            if (!client) {
-              return res.status(400).json({ message: `Клиент с ID ${client_id} не найден` });
-            }
-            user.client_id = client_id;
-          }
-        } else if (user.user_type !== 'CLIENT') {
-          return res.status(400).json({ message: 'client_id обязателен при смене типа на CLIENT или обновлении пользователя CLIENT, если client_id не был установлен ранее' });
-        }
-        if (position !== undefined) user.position = position;
-      } else if (user_type === 'INTERNAL') {
-        user.client_id = null;
-        user.position = null;
-      }
-      user.user_type = user_type;
-    } else {
-      if (user.user_type === 'CLIENT') {
-        if (position !== undefined) user.position = position;
-        if (client_id !== undefined) {
-          if (client_id === null) {
-            user.client_id = null;
-          } else {
-            const client = await Client.findByPk(client_id);
-            if (!client) {
-              return res.status(400).json({ message: `Клиент с ID ${client_id} не найден` });
-            }
-            user.client_id = client_id;
-          }
-        }
-      }
-    }
-
-    if (password) {
-      user.password_hash = await bcrypt.hash(password, 10);
-    }
-
-    await user.save();
-    
-    const userResponse = { ...user.toJSON() };
-    delete userResponse.password_hash;
-
-    res.json(userResponse);
   } catch (error) {
-    console.error(`Ошибка при обновлении пользователя ${userId}:`, error);
-    if (error.name === 'SequelizeValidationError') {
-      return res.status(400).json({ message: 'Ошибка валидации: ' + error.errors.map(e => e.message).join(', ') });
+    logger.error('[UserController.update] Failed to update user ID %s. Error: %s', userId, error.message, {
+      // error: error, // logged by service
+      userIdParam: userId,
+      requestBody: bodyToLog,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+
+    if (error.status === 404 || error.status === 400) {
+      return res.status(error.status).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Ошибка сервера при обновлении пользователя' });
+    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ message: 'Ошибка валидации: ' + (error.errors ? error.errors.map(e => e.message).join(', ') : error.message) });
+    }
+    next(error);
   }
 }
 
@@ -258,18 +244,44 @@ async function update(req, res) {
  * @returns {Error} 404 - Пользователь не найден
  * @returns {Error} 500 - Ошибка сервера
  */
-async function remove(req, res) {
+async function remove(req, res, next) {
+  const userId = req.params.id;
+  logger.info('[UserController.remove] Attempting to delete user ID %s. Requesting user: %o',
+    userId,
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
   try {
-    const user = await User.findByPk(req.params.id);
-    if (!user) {
-      return res.status(404).json({ message: 'Пользователь не найден' });
-    }
-    await user.destroy();
-    res.json({ message: 'Пользователь удалён' });
+    const success = await userService.deleteUser(userId);
+    // Сервис должен выбросить ошибку, если пользователь не найден, 
+    // так что success всегда будет true, если не было ошибок.
+    // Или можно изменить сервис, чтобы он возвращал объект или null, и проверять здесь.
+    // В текущей реализации сервис выбрасывает ошибку 404, если не найден.
+    
+    logger.debug('[UserController.remove] User ID %s deleted successfully by service.', userId);
+    // res.json({ message: 'Пользователь удалён' });
+    res.status(204).send(); // Стандартный ответ для успешного удаления без тела
+
   } catch (error) {
-    console.error(`Ошибка при удалении пользователя ${req.params.id}:`, error);
-    res.status(500).json({ message: 'Ошибка сервера при удалении пользователя' });
+    logger.error('[UserController.remove] Failed to delete user ID %s. Error: %s', userId, error.message, {
+      // error: error, // logged by service
+      userIdParam: userId,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+    if (error.status === 404) {
+      return res.status(404).json({ message: error.message });
+    }
+    // Другие возможные ошибки, например, SequelizeForeignKeyConstraintError, если есть связи
+    // if (error.name === 'SequelizeForeignKeyConstraintError') {
+    //   return res.status(400).json({ message: 'Невозможно удалить пользователя, так как он связан с другими данными.' });
+    // }
+    next(error);
   }
 }
 
-module.exports = { getAll, getById, create, update, remove }; 
+module.exports = {
+  getAll: [validateQuery(getAllUsersSchema), getAll],
+  getById: [validateParams(userIdSchema), getById],
+  create: [validateBody(createUserSchema), create],
+  update: [validateParams(userIdSchema), validateBody(updateUserSchema), update],
+  remove: [validateParams(userIdSchema), remove],
+}; 

@@ -10,72 +10,14 @@ import {
     SettingOutlined,
     InfoCircleOutlined, // Для DebugLogsButton
     BuildOutlined, // Для подпункта "Интерфейс"
-    UserOutlined // Для подпункта "Пользователи" в Настройках
+    UserOutlined, // Для подпункта "Пользователи" в Настройках
+    UploadOutlined // Для "Загрузка данных"
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import { APP_NAME, API_URL } from '../constants/appConstants'; // API_URL для DebugLogsButton
+import DebugLogsButton from '../components/DebugLogsButton'; // Импортируем новый компонент
 
 const { Title } = Typography; // Title используется в Sider
-
-// DebugLogsButton остается здесь временно, будет вынесен позже
-function DebugLogsButton() {
-  const [isModalVisible, setIsModalVisible] = useState(false);
-  const [logs, setLogs] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const fetchLogs = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_URL}/api/debug-log`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      const data = await response.json();
-      setLogs(data.logs || 'Логи пусты');
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-      message.error('Ошибка при загрузке логов');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const showModal = () => {
-    setIsModalVisible(true);
-    fetchLogs();
-  };
-
-  return (
-    <>
-      <Button 
-        onClick={showModal}
-        icon={<InfoCircleOutlined />}
-        block
-      >
-        Отладочные логи
-      </Button>
-      <Modal
-        title="Отладочные логи"
-        open={isModalVisible}
-        onCancel={() => setIsModalVisible(false)}
-        footer={[
-          <Button key="refresh" onClick={fetchLogs} loading={loading}>
-            Обновить
-          </Button>,
-          <Button key="close" onClick={() => setIsModalVisible(false)}>
-            Закрыть
-          </Button>
-        ]}
-        width={800}
-      >
-        <div className="debug-logs-modal-content">
-          {loading ? <Skeleton active /> : logs}
-        </div>
-      </Modal>
-    </>
-  );
-}
 
 function DashboardLayout() {
   const navigate = useNavigate()
@@ -106,6 +48,7 @@ function DashboardLayout() {
     { key: '/dashboard/companies', icon: <ApartmentOutlined />, label: <Link to="/dashboard/companies">Юрлица</Link> },
     { key: '/dashboard/users', icon: <UsergroupAddOutlined />, label: <Link to="/dashboard/users">Пользователи</Link> },
     { key: '/dashboard/field-mappings', icon: <BranchesOutlined />, label: <Link to="/dashboard/field-mappings">Маппинг полей</Link> },
+    { key: '/dashboard/data-imports', icon: <UploadOutlined />, label: <Link to="/dashboard/data-imports">Загрузка данных</Link> },
     {
       key: '/dashboard/settings',
       icon: <SettingOutlined />,

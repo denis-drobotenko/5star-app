@@ -8,7 +8,7 @@
   },
   "scripts": {
     "prestart": "npm run docs:ai:json",
-    "predev": "npm run docs:ai:json",
+    "predev": "echo \"Skipping AI docs generation due to ENOBUFS error\"",
     "db:sql": "pg_dump -U $PGUSER -h $PGHOST -p $PGPORT --schema-only $PGDATABASE > docs/schema.sql",
     "db:dbml": "npx dbml2sql docs/schema.sql -o docs/db.dbml",
     "db:drop": "dotenv -e .env -- bash -c 'export PGPASSWORD=\"$DB_PASSWORD\"; psql -U \"$DB_USER\" -h \"$DB_HOST\" -p \"$DB_PORT\" -d \"$DB_NAME\" -c \"DROP SCHEMA public CASCADE; CREATE SCHEMA public;\"'",
@@ -19,7 +19,7 @@
     "start": "fuser -k 3000/tcp || true && node src/server.js",
     "dev": "concurrently \"npm run dev:backend:kill_and_start\" \"npm run dev:frontend\"",
     "dev:backend": "nodemon --delay 5s src/server.js",
-    "dev:backend:kill_and_start": "(fuser -k 3000/tcp || true) && nodemon --delay 5s src/server.js",
+    "dev:backend:kill_and_start": "(fuser -k 3000/tcp || true) && nodemon --delay 5s --exec \"node --trace-uncaught --unhandled-rejections=strict src/server.js\"",
     "dev:frontend": "(fuser -k 5173/tcp || true) && cd src/frontend && npm run dev -- --host",
     "docs:ai": "jsdoc2md src/**/*.js > docs/AI_FUNCTIONS.md",
     "docs:ai:json": "node generate-ai-functions-json.js",
@@ -37,16 +37,22 @@
     "dotenv-cli": "^8.0.0",
     "jsdoc": "^4.0.4",
     "jsdoc-to-markdown": "^8.0.0",
-    "nodemon": "^3.1.10"
+    "nodemon": "^3.1.10",
+    "sequelize-cli": "^6.6.3",
+    "umzug": "^3.8.2"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.812.0",
+    "@aws-sdk/lib-storage": "^3.812.0",
+    "@aws-sdk/s3-request-presigner": "^3.812.0",
     "antd": "^5.25.1",
-    "aws-sdk": "^2.1692.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^4.18.2",
+    "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
     "multer": "^1.4.5-lts.2",
     "nodemailer": "^7.0.3",
     "path-to-regexp": "^8.2.0",
@@ -54,6 +60,7 @@
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.7",
     "winston": "^3.13.0",
-    "xlsx": "^0.18.5"
+    "winston-daily-rotate-file": "^5.0.0",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz"
   }
 }

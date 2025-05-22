@@ -104,112 +104,132 @@ export const requiredFields = [
   'revenue'
 ];
 
-export const targetFieldMappings = {
+export const targetFieldMappings = [
   // Основные данные заказа
-  'order_number': {
+  {
+    key: 'order_number',
     name: 'Номер заказа',
     aliases: ['номер заказа', '№ заказа', 'заказ №', 'заказ номер', 'order number', 'order no', 'order id'],
     allowedProcessing: ['NONE', 'RIGHT', 'LEFT', 'SUBSTRING', 'SPLIT', 'REGEXP']
   },
-  'order_date': {
+  {
+    key: 'order_date',
     name: 'Дата заказа',
     aliases: ['дата заказа', 'дата оформления', 'дата создания', 'order date', 'creation date'],
     allowedProcessing: ['NONE', 'EXTRACT_DATE', 'EXTRACT_DATETIME', 'RIGHT', 'SUBSTRING', 'REGEXP']
   },
-  'delivery_date': {
+  {
+    key: 'delivery_date',
     name: 'Дата доставки',
     aliases: ['дата доставки', 'дата выдачи', 'дата выдачи заказа', 'delivery date'],
     allowedProcessing: ['NONE', 'EXTRACT_DATE', 'EXTRACT_DATETIME', 'RIGHT', 'SUBSTRING', 'REGEXP']
   },
-  'category': {
+  {
+    key: 'category',
     name: 'Категория',
     aliases: ['категория', 'category', 'group'],
     allowedProcessing: ['NONE', 'REPLACE']
   },
-  'brand': {
+  {
+    key: 'brand',
     name: 'Бренд товара',
     aliases: ['бренд', 'производитель', 'brand', 'manufacturer'],
     allowedProcessing: ['NONE', 'REPLACE']
   },
-  'article_number': {
+  {
+    key: 'article_number',
     name: 'Артикул',
     aliases: ['артикул', 'арт.', 'арт', 'article', 'sku', 'part number'],
     allowedProcessing: ['NONE', 'REPLACE', 'REGEXP']
   },
-  'product': {
+  {
+    key: 'product',
     name: 'Товар',
     aliases: ['товар', 'наименование', 'название товара', 'номенклатура', 'product', 'item', 'description'],
     allowedProcessing: ['NONE', 'REPLACE']
   },
-  'quantity': {
+  {
+    key: 'quantity',
     name: 'Количество',
     aliases: ['количество', 'кол-во', 'кол', 'qty', 'quantity', 'amount'],
     allowedProcessing: ['NONE', 'REGEXP']
   },
-  'revenue': {
+  {
+    key: 'revenue',
     name: 'Сумма',
     aliases: ['сумма', 'стоимость', 'цена', 'розница', 'розница (сумма)', 'revenue', 'price', 'total'],
     allowedProcessing: ['NONE', 'REGEXP']
   },
-  'cost_price': {
+  {
+    key: 'cost_price',
     name: 'Себестоимость',
     aliases: ['себестоимость', 'закупочная цена', 'cost price', 'purchase price'],
     allowedProcessing: ['NONE', 'REGEXP']
   },
 
   // Данные клиента
-  'customer_id': {
+  {
+    key: 'customer_id',
     name: 'ID клиента',
     aliases: ['id клиента', 'идентификатор клиента', 'customer id', 'client id'],
     allowedProcessing: ['NONE', 'RIGHT', 'LEFT', 'SUBSTRING', 'REGEXP']
   },
-  'name': {
+  {
+    key: 'name',
     name: 'Имя или ФИО',
     aliases: ['имя', 'фио', 'имя фамилия', 'фамилия имя', 'клиент', 'first name', 'fullname', 'full name', 'customer name', 'Владелец'],
     allowedProcessing: ['NONE', 'SPLIT', 'REPLACE']
   },
-  'last_name': {
+  {
+    key: 'last_name',
     name: 'Фамилия',
     aliases: ['фамилия', 'last name', 'lastname', 'surname'],
     allowedProcessing: ['NONE', 'SPLIT', 'REPLACE']
   },
-  'birthday': {
+  {
+    key: 'birthday',
     name: 'День рождения',
     aliases: ['др', 'дата рождения', 'день рождения', 'birthday', 'birth date', 'date of birth', 'dob'],
     allowedProcessing: ['NONE', 'EXTRACT_DATE', 'EXTRACT_DATETIME', 'REGEXP']
   },
-  'telephone': {
+  {
+    key: 'telephone',
     name: 'Телефон',
     aliases: ['телефон', 'тел', 'тел.', 'phone', 'mobile', 'contact'],
     allowedProcessing: ['NONE', 'REGEXP', 'REPLACE']
   },
 
   // Информация о местоположении
-  'city': {
+  {
+    key: 'city',
     name: 'Город',
     aliases: ['город', 'city', 'town'],
     allowedProcessing: ['NONE', 'REPLACE']
   },
-  'subdivision': {
+  {
+    key: 'subdivision',
     name: 'Подразделение',
     aliases: ['подразделение', 'отдел', 'филиал', 'subdivision', 'department', 'branch'],
     allowedProcessing: ['NONE', 'REPLACE']
   },
-  'pick_up_point': {
+  {
+    key: 'pick_up_point',
     name: 'Пункт выдачи',
     aliases: ['пункт выдачи', 'пвз', 'точка выдачи', 'pickup point', 'collection point'],
     allowedProcessing: ['NONE', 'REPLACE']
   },
 
   // Данные об автомобиле
-  'car_brand': {
+  {
+    key: 'car_brand',
     name: 'Марка автомобиля',
     aliases: ['марка авто', 'марка', 'бренд авто', 'car brand', 'car make'],
     allowedProcessing: ['NONE', 'REPLACE']
   },
-  'car_model': {
+  {
+    key: 'car_model',
     name: 'Модель автомобиля',
     aliases: ['модель авто', 'модель', 'car model'],
     allowedProcessing: ['NONE', 'REPLACE']
   }
-}; 
+]; 

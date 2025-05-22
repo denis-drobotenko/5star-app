@@ -134,7 +134,6 @@ function InternalUsersPage() {
       if (e.message) {
         message.error(e.message);
       } 
-      console.error('Ошибка при сохранении внутреннего пользователя:', e);
     }
   };
   
@@ -232,9 +231,6 @@ function InternalUsersPage() {
                 >
                     <Switch checkedChildren="Активен" unCheckedChildren="Не активен" />
                 </Form.Item>
-
-                {/* <div style={{ height: '600px', border: '2px solid red', background: 'rgba(255,0,0,0.05)', padding: '10px', margin: '10px 0' }}>FORCED SCROLL TEST BLOCK 1 (InternalUsersPage Form)</div> */}
-                {/* <div style={{ height: '600px', border: '2px solid green', background: 'rgba(0,255,0,0.05)', padding: '10px', margin: '10px 0' }}>FORCED SCROLL TEST BLOCK 2 (InternalUsersPage Form)</div> */}
                 
                 <Form.Item>
                   <Space style={{ display: 'flex', justifyContent: 'space-between', width: '100%', marginTop: '16px' }}>

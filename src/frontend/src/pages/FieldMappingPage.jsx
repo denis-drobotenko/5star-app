@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Button, Typography, Form, Input, Select, Skeleton, Upload, Progress, Empty, Space, App, Card, InputNumber, Modal, Table, Divider, Alert } from 'antd';
 import { InfoCircleOutlined, UploadOutlined, LeftOutlined, RightOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, SettingOutlined, LinkOutlined } from '@ant-design/icons';
 import { API_URL } from '../constants/appConstants';
-import { requiredFields, targetFieldMappings, processingFunctions } from '../constants/fieldMappingConstants';
+import { requiredFields, targetFieldMappings, processingFunctions } from '../shared/config/fieldMappingConstants';
 import '../assets/forms.css';
+import apiClient from '../shared/api/apiClient';
 
 const { Title, Paragraph } = Typography;
 
@@ -486,11 +487,14 @@ function FieldMappingPage() {
 
   // Обновляем валидацию при изменении значений формы
   useEffect(() => {
-    if (formValues) {
-      const valid = isMappingValid();
+    if (formValues && (selectedId === 'new' || selectedId)) { // Вызываем isMappingValid только если есть выбранный ID (включая 'new')
+                                                              // чтобы не вызывать на пустой форме при первой загрузке
+      const valid = isMappingValid(false); // Вызываем без показа сообщений
       setIsValid(valid);
+    } else if (!selectedId) {
+      setIsValid(false); // Если ничего не выбрано (дефолтное состояние), форма невалидна для сабмита
     }
-  }, [formValues]);
+  }, [formValues, selectedId]); // Добавляем selectedId в зависимости
 
   // Добавляем эффект для фильтрации маппингов
   useEffect(() => {
@@ -506,103 +510,68 @@ function FieldMappingPage() {
     setFilteredMappings(filtered);
   }, [searchText, mappings]);
 
-  const isMappingValid = () => {
-    const currentFormValues = form.getFieldsValue();
-    console.log('Проверка валидности формы:', {
-      hasName: !!currentFormValues.name,
-      nameValue: currentFormValues.name,
-      hasClientId: !!currentFormValues.client_id,
-      clientIdValue: currentFormValues.client_id,
-      hasFileData: !!fileData,
-      sourceFieldsLength: sourceFields.length,
-      mapping: currentFormValues.mapping
-    });
+  const isMappingValid = (showMessages = false) => { // Добавим флаг для управления сообщениями
+    const values = form.getFieldsValue();
 
-    // Проверяем наличие названия маппинга
-    if (!currentFormValues.name || currentFormValues.name.trim() === '') {
-      console.log('❌ Отсутствует название маппинга');
-      logToFile('❌ Валидация: отсутствует название маппинга', currentFormValues);
+    if (!values.name || values.name.trim() === '') {
+      if (showMessages) message.error('Не указано название маппинга');
+      return false;
+    }
+    if (!values.client_id) {
+      if (showMessages) message.error('Не выбран клиент');
       return false;
     }
 
-    // Проверяем наличие клиента
-    if (!currentFormValues.client_id) {
-      console.log('❌ Не выбран клиент');
-      logToFile('❌ Валидация: не выбран клиент', currentFormValues);
-      return false;
-    }
-
-    // Проверяем наличие загруженного файла
-    if (!fileData || !sourceFields.length) {
-      console.log('❌ Нет загруженного файла или полей');
-      logToFile('❌ Валидация: нет загруженного файла или полей', {
-        hasFileData: !!fileData,
-        sourceFieldsLength: sourceFields.length
-      });
-      return false;
-    }
-
-    const currentMappingObject = currentFormValues.mapping || {};
-    
-    // Проверяем наличие хотя бы одного маппинга
-    if (Object.keys(currentMappingObject).length === 0) {
-      console.log('❌ Отсутствуют маппинги полей');
-      logToFile('❌ Валидация: отсутствуют маппинги полей', currentMappingObject);
-      return false;
-    }
-    
-    // Проверяем обязательные поля и их функции обработки
-    const isValid = requiredFields.every(field => {
-      const fieldMapping = currentMappingObject[field];
-      console.log(`Проверка поля ${field}:`, {
-        hasFieldMapping: !!fieldMapping,
-        fieldValue: fieldMapping?.field,
-        processing: fieldMapping?.processing
-      });
-      
-      // Проверяем наличие выбранного поля
-      if (!fieldMapping?.field || fieldMapping.field.trim() === '') {
-        console.log(`❌ Поле ${field} не выбрано`);
-        logToFile(`❌ Валидация: поле ${field} не выбрано`, fieldMapping);
+    // Проверка sample_data_url или fileData только если это новый маппинг или если нет sample_data_url
+    // Для существующего маппинга с sample_data_url, файл может быть еще не загружен в fileData при проверке
+    const isNewMappingMode = selectedId === 'new';
+    if (isNewMappingMode && !fileData && !originalXlsxFileUrl) { // Для нового - файл обязателен
+        if (showMessages) message.error('Не загружен XLSX файл с примером данных для нового маппинга.');
         return false;
-      }
+    }
+    // Если это не новый маппинг, но и URL нет (например, его удалили или это старый маппинг без URL),
+    // то файл тоже должен быть загружен, если мы хотим его валидировать по содержимому.
+    // Но для простой валидации полей маппинга сам файл не всегда нужен, если sourceFields уже есть.
+    // Пока оставим проверку, что ХОТЯ БЫ ЧТО-ТО есть, если это не просто открытие существующего.
+    if (!fileData && !originalXlsxFileUrl && sourceFields.length === 0) {
+        if (showMessages) message.error('Отсутствуют поля для маппинга (не загружен файл или файл пуст).');
+        return false;
+    }
 
-      // Если выбрана функция обработки, проверяем её параметры
-      if (fieldMapping.processing && fieldMapping.processing.function !== 'NONE') {
-        const processingFunc = processingFunctions[fieldMapping.processing.function];
-        if (processingFunc?.params) {
-          // Для функций извлечения дат параметры необязательны
-          if (fieldMapping.processing.function === 'EXTRACT_DATE' || 
-              fieldMapping.processing.function === 'EXTRACT_DATETIME') {
-            return true;
-          }
 
-          const hasAllParams = processingFunc.params.every(param => {
-            const value = fieldMapping.processing.params?.[param.name];
-            const isValid = value !== undefined && value !== null && value !== '';
-            if (!isValid) {
-              console.log(`❌ В поле ${field} не заполнен параметр ${param.name} для функции ${fieldMapping.processing.function}`);
-              logToFile(`❌ Валидация: в поле ${field} не заполнен параметр ${param.name}`, {
-                field,
-                function: fieldMapping.processing.function,
-                params: fieldMapping.processing.params
-              });
-            }
-            return isValid;
-          });
-          if (!hasAllParams) return false;
+    if (!values.mapping || Object.keys(values.mapping).length === 0) {
+      if (showMessages) message.error('Отсутствуют правила сопоставления полей.');
+      return false;
+    }
+
+    for (const field in targetFieldMappings) {
+      if (targetFieldMappings[field]?.required) {
+        const fieldMapping = values.mapping[field];
+        if (!fieldMapping || !fieldMapping.field) {
+          if (showMessages) message.error(`Не выбрано сопоставление для обязательного поля: ${targetFieldMappings[field].name}`);
+          return false;
         }
+        // Проверка параметров для функций обработки (если нужно будет, можно раскомментировать и доработать)
+        /*
+        if (fieldMapping.processing && fieldMapping.processing.function !== 'NONE') {
+          const funcDef = processingFunctions.find(f => f.id === fieldMapping.processing.function); // processingFunctions должен быть массивом объектов с id, name, params
+          if (funcDef && funcDef.params) {
+            for (const param of funcDef.params) {
+              if (param.required && 
+                  (typeof fieldMapping.processing.params?.[param.name] === 'undefined' || 
+                   fieldMapping.processing.params?.[param.name] === '' || 
+                   (Array.isArray(fieldMapping.processing.params?.[param.name]) && fieldMapping.processing.params?.[param.name].length === 0)))
+              {
+                if (showMessages) message.error(`В поле "${targetFieldMappings[field].name}" (${field}) не заполнен обязательный параметр "${param.label || param.name}" для функции обработки "${funcDef.name}"`);
+                return false;
+              }
+            }
+          }
+        }
+        */
       }
-
-      return true;
-    });
-
-    console.log('Результат проверки:', isValid);
-    logToFile('Результат валидации формы', {
-      isValid,
-      formValues: currentFormValues
-    });
-    return isValid;
+    }
+    return true;
   };
 
   const logToFile = async (messageText, data = null) => { // переименовал message в messageText во избежание конфликта с message из antd
@@ -1114,6 +1083,15 @@ function FieldMappingPage() {
   };
 
   const handleSubmit = async (values) => {
+    // Перед непосредственным сабмитом, вызовем isMappingValid с показом сообщений
+    if (!isMappingValid(true)) {
+      // Сообщения об ошибках уже будут показаны внутри isMappingValid, если showMessages = true
+      // Можно добавить общее сообщение, если нужно
+      // message.error('Пожалуйста, исправьте ошибки в форме перед сохранением.');
+      await logToFile('❌ Попытка сохранения невалидного маппинга. Ошибки показаны пользователю.', { values });
+      return; 
+    }
+
     try {
       await logToFile('Начало сохранения маппинга', {
         values,
@@ -1697,7 +1675,10 @@ function FieldMappingPage() {
                                   setCurrentRowIndex(0);
                                   setOriginalXlsxFileUrl(null); // Также сбрасываем URL, если он был от загрузки
                                   setOriginalXlsxFileName(null);
-                                  form.resetFields(['mapping']);
+                                  form.resetFields([
+                                    'mapping'
+                                    // Не сбрасываем client_id и name, если они уже введены для нового маппинга
+                                  ]);
                                   setAutoMappingComplete(false);
                                 }}
                               >
@@ -1722,7 +1703,67 @@ function FieldMappingPage() {
                         <Button 
                           type="link" 
                           icon={<LinkOutlined />}
-                          onClick={() => window.open(originalXlsxFileUrl, '_blank')}
+                          onClick={async () => {
+                            if (selectedId === 'new' || !currentMappingData?.sample_data_url) { // Если это новый маппинг (URL уже подписан) или нет sample_data_url
+                              window.open(originalXlsxFileUrl, '_blank');
+                            } else {
+                              // Для существующего маппинга нужно получить свежую подписанную ссылку
+                              // currentMappingData.sample_data_url здесь это КЛЮЧ S3
+                              try {
+                                message.loading({ content: 'Получение ссылки...', key: 'gettingSignedUrl' });
+                                
+                                console.log('[FieldMappingPage] Initial currentMappingData.sample_data_url:', currentMappingData?.sample_data_url);
+                                let s3Key = currentMappingData.sample_data_url;
+                                
+                                if (s3Key) {
+                                  const bucketName = import.meta.env.VITE_S3_BUCKET_NAME; // Объявляем bucketName один раз здесь
+
+                                  // 1. Если это полный URL, извлекаем путь
+                                  if (s3Key.startsWith('http')) {
+                                    try {
+                                      const urlObject = new URL(s3Key);
+                                      s3Key = urlObject.pathname; // Получаем путь, например /5star-bucket/path/key.xlsx
+                                    } catch (e) {
+                                      console.error('[FieldMappingPage] Error parsing sample_data_url as URL:', s3Key, e);
+                                    }
+                                  }
+
+                                  // 2. Убираем query-параметры (из исходной строки, если это не был URL, или из pathname)
+                                  s3Key = s3Key.split('?')[0];
+
+                                  // 3. Убираем ведущий слэш, если он есть
+                                  if (s3Key.startsWith('/')) {
+                                    s3Key = s3Key.substring(1);
+                                  }
+
+                                  // 4. Удаляем имя бакета, если оно является первой частью пути
+                                  if (bucketName && s3Key.startsWith(bucketName + '/')) {
+                                    s3Key = s3Key.substring(bucketName.length + 1);
+                                  } else if (!bucketName && s3Key.includes('/')) {
+                                    // Если VITE_S3_BUCKET_NAME не задан, но ключ все еще содержит '/',
+                                    // пробуем удалить первую часть как предполагаемое имя бакета.
+                                    s3Key = s3Key.substring(s3Key.indexOf('/') + 1);
+                                  }
+                                }
+
+                                console.log('[FieldMappingPage] Attempting to get signed URL for S3 Key (final cleanup):', s3Key);
+                                // Формируем URL для логирования, чтобы увидеть, на что реально пойдет запрос в api.js
+                                // Это только для отладки, сам URL формируется внутри apiClient
+                                const debugUrl = `${API_URL}/api/field-mappings/s3-signed-url?key=${encodeURIComponent(s3Key)}`;
+                                console.log('[FieldMappingPage] Debug URL for getSignedUrl:', debugUrl);
+
+                                const signedUrlResponse = await apiClient.getSignedUrlForFile(s3Key);
+                                if (signedUrlResponse && signedUrlResponse.signedUrl) {
+                                  message.success({ content: 'Ссылка получена!', key: 'gettingSignedUrl', duration: 2 });
+                                  window.open(signedUrlResponse.signedUrl, '_blank');
+                                } else {
+                                  message.error({ content: 'Не удалось получить ссылку или ответ не содержит URL.', key: 'gettingSignedUrl', duration: 2 });
+                                }
+                              } catch (error) {
+                                message.error({ content: `Ошибка получения ссылки: ${error.message}`, key: 'gettingSignedUrl', duration: 3 });
+                              }
+                            }
+                          }}
                           style={{ paddingLeft: 0 }}
                         >
                           Открыть XLSX

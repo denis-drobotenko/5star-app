@@ -25,6 +25,7 @@ import ClientUsersPage from './pages/UsersPage'
 import FieldMappingPage from './pages/FieldMappingPage'
 import SettingsPage from './pages/SettingsPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
+import { DataImportsPage } from "./slices/data-import"
 
 const { Title, Paragraph } = Typography;
 const { Header, Content, Sider } = Layout;
@@ -124,6 +125,7 @@ function App() {
                 <Route path="clients" element={<ClientsPage />} />
                 <Route path="users" element={<ClientUsersPage />} />
                 <Route path="field-mappings" element={<FieldMappingPage />} />
+                <Route path="data-imports" element={<DataImportsPage />} />
                   <Route path="settings/*" element={<SettingsPage />} />
               </Route>
               <Route path="/" element={<Navigate to="/dashboard" />} />

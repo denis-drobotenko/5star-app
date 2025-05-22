@@ -4,18 +4,21 @@ require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const logger = require('./config/logger');
-const migrationManager = require('./utils/migrations');
+const cors = require('cors');
+
+// const { sequelize, syncModels } = require('./models'); // Старый импорт
+const { sequelize, initializeDatabase } = require('./models'); // Новый импорт
 
 // logger.info('[App.js] Script execution STARTED.');
 
 // logger.info('[App.js] Requiring ./models...');
-const { sequelize, syncModels } = require('./models');
+// const { sequelize, syncModels } = require('./models'); // Временно отключаем все связанное с БД
 // logger.info('[App.js] ./models REQUIRED.');
 
 // logger.info('[App.js] Requiring cors...');
-const cors = require('cors');
 // logger.info('[App.js] cors REQUIRED.');
 
+// ВРЕМЕННО ОТКЛЮЧАЕМ ИМПОРТЫ И ИСПОЛЬЗОВАНИЕ ВСЕХ РОУТОВ
 // logger.info('[App.js] Requiring ./routes/auth...');
 const authRoutes = require('./routes/auth');
 // logger.info('[App.js] ./routes/auth REQUIRED.');
@@ -44,16 +47,28 @@ const clientRoutes = require('./routes/clientRoutes');
 const debugRoutes = require('./routes/debugRoutes');
 // logger.info('[App.js] ./routes/debugRoutes REQUIRED.');
 
+const importRoutes = require('./routes/importRoutes');
+
 // logger.info('[App.js] All modules imported (after individual require logs).');
 
 const app = express();
 
 // logger.info('[App.js] Express app created.');
 
-// Включаем CORS для всех запросов (можно настроить более детально)
-// logger.info('[App.js] Attempting to use CORS middleware...');
-app.use(cors());
-// logger.info('[App.js] CORS middleware configured.');
+// Опции CORS
+const corsOptions = {
+  origin: ['http://localhost:5173', 'http://localhost:3000'], // Разрешить ваш фронтенд и бэкенд (если он проксируется)
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], // Разрешенные методы
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'], // Разрешенные заголовки
+  credentials: true, // Разрешить передачу credentials (например, cookies, Authorization header)
+  optionsSuccessStatus: 204 // Для старых браузеров, которые могут иметь проблемы с кодом 204
+};
+
+// Явно обрабатываем OPTIONS запросы для всех маршрутов
+app.options('*', cors(corsOptions));
+
+// Применяем CORS ко всем остальным запросам
+app.use(cors(corsOptions));
 
 // Middleware для логирования всех запросов
 app.use((req, res, next) => {
@@ -72,7 +87,6 @@ app.use(express.urlencoded({ limit: '20mb', extended: true }));
 // logger.info('[App.js] express.urlencoded middleware configured.');
 
 // API маршруты
-// logger.info('[App.js] Configuring API routes...');
 app.use('/auth', authRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/companies', companiesRoutes);
@@ -80,7 +94,7 @@ app.use('/api/xlsx', xlsxRoutes);
 app.use('/api/field-mappings', fieldMappingsRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/debug', debugRoutes);
-// logger.info('[App.js] API routes configured.');
+app.use('/api/imports', importRoutes);
 
 // Делаем документацию JSDoc доступной по /docs
 // logger.info('[App.js] Configuring JSDoc static serving...');
@@ -89,7 +103,7 @@ app.use('/docs', express.static(path.join(__dirname, '../docs')));
 
 // Раздача статических файлов фронтенда
 // logger.info('[App.js] Configuring frontend static serving...');
-app.use('/', express.static(path.join(__dirname, 'frontend/dist')));
+// app.use('/', express.static(path.join(__dirname, 'frontend/dist'))); // Закомментировано
 // logger.info('[App.js] Frontend static serving configured.');
 
 // Глобальный обработчик ошибок Express
@@ -123,21 +137,24 @@ app.use((err, req, res, next) => {
 });
 // logger.info('[App.js] Global error handler configured.');
 
-// Проверка подключения к БД, запуск миграций и синхронизация моделей при запуске
+// Проверка подключения к БД, запуск миграций и синхронизация моделей при запуске - РАСКОММЕНТИРОВАНО
 // logger.info('[App.js] Starting database authentication and model synchronization...');
 sequelize.authenticate()
   .then(() => {
     // logger.info('[App.js] Database authentication SUCCESSFUL.');
     // Сначала запускаем миграции
-    return migrationManager.runMigrations();
+    // ВРЕМЕННО ОТКЛЮЧЕНО для пересоздания таблиц через sync({force:true})
+    // return migrationManager.runMigrations(); 
+    return Promise.resolve(); // Возвращаем resolved Promise, чтобы цепочка .then() продолжилась
   })
   .then(() => {
     // После успешного применения миграций синхронизируем модели
     // logger.info('[App.js] Attempting to sync models...');
-    return syncModels();
+    return initializeDatabase();
   })
   .then(() => {
     // logger.info('[App.js] Model synchronization SUCCESSFUL.');
+    logger.info('[App.js] Database initialization and migrations (if any) process completed.');
     const PORT = process.env.PORT || 3000;
     // logger.info(`[App.js] Preparing to start server on port ${PORT}.`);
     
@@ -152,8 +169,6 @@ sequelize.authenticate()
         logger.error(`[App.js - server.on('error')] Server error: ${e.message}`, { error: e });
       }
     });
-
-    // logger.info(`[App.js] app.listen called for port ${PORT}. Waiting for server to start or error.`); // Этот лог дублирует информацию или может быть запутывающим
 
   })
   .catch(err => {
@@ -170,6 +185,14 @@ sequelize.authenticate()
     process.exit(1);
   });
 
+// Запасной app.listen - ТЕПЕРЬ ЗАКОММЕНТИРОВАН
+/*
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  logger.info(`[App.js] SERVER STARTED (DB & Routes SKIPPED) and listening on port ${PORT}.`);
+});
+*/
+
 // logger.info('[App.js] End of script execution flow reached (server start is async).');
 
 /**
@@ -177,13 +200,57 @@ sequelize.authenticate()
  * @returns {string}
  */
 function testDoc() {
-  return 'JSDoc работает!';
+  return 'JSDoc is working';
 }
 
 // Маршрут по умолчанию для SPA (должен быть последним!)
+// app.get('/*', (req, res) => { // Закомментировано
+//   if (!req.path.startsWith('/api') && !req.path.startsWith('/auth') && !req.path.startsWith('/docs')) {
+//     // logger.info(`[App.js - SPA Fallback] Serving index.html for path: ${req.path}`); // Можно оставить для отладки SPA роутинга, но по умолчанию лучше убрать
+//   }
+//   res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
+// });
+
+if (process.env.NODE_ENV === 'production') {
+  // Раздача статических файлов фронтенда для production
+  logger.info('[App.js] Configuring frontend static serving for PRODUCTION.');
+  app.use('/', express.static(path.join(__dirname, 'frontend/dist')));
+
+  // Маршрут по умолчанию для SPA для production (должен быть последним!)
 app.get('/*', (req, res) => {
   if (!req.path.startsWith('/api') && !req.path.startsWith('/auth') && !req.path.startsWith('/docs')) {
-    // logger.info(`[App.js - SPA Fallback] Serving index.html for path: ${req.path}`); // Можно оставить для отладки SPA роутинга, но по умолчанию лучше убрать
+      // logger.info(`[App.js - SPA Fallback] Serving index.html for PRODUCTION path: ${req.path}`);
   }
   res.sendFile(path.join(__dirname, 'frontend/dist/index.html'));
 });
+} else {
+  logger.info('[App.js] Skipping frontend static serving and SPA fallback for DEVELOPMENT.');
+  // В режиме разработки Vite сам обслуживает фронтенд.
+  // Можно добавить простой ответ для корневого пути, если нужно.
+  app.get('/', (req, res) => {
+    if (!req.path.startsWith('/api') && !req.path.startsWith('/auth') && !req.path.startsWith('/docs')) {
+      res.send('Backend is running in development mode. Frontend is served by Vite dev server.');
+    } else {
+      // This case should ideally not be hit if API routes are defined before this generic handler.
+      // However, if an API-like path is not handled by specific routes,
+      // Express would try to match it here.
+      // We are in development, and non-API/auth/docs routes are handled by Vite.
+      // So for any other unhandled path that might look like an API call but isn't,
+      // we can send a 404 or a specific message.
+      // For simplicity, let's assume all API routes are correctly defined above.
+      // If a request like /api/nonexistent is made, it should be handled by API router or result in 404 from there.
+      // This part ensures that if a request somehow bypasses API routers and is not SPA route,
+      // it doesn't accidentally try to serve index.html or show a generic message for an API path.
+      // However, the `if` condition already filters for non-API paths.
+      // So, for this `else` branch, we simply let it pass to be handled by subsequent error handlers or 404.
+      // A better approach might be to ensure all API routes return a 404 if not found,
+      // and this generic handler is only for SPA/static assets.
+      // Given the current structure, if it's an API path, it should have been handled.
+      // If we reach here with an API path, it's an issue with routing order or definition.
+      // For now, this 'else' might be redundant due to the outer 'if'.
+      // No specific action needed here, Express will 404 if no other middleware handles it.
+    }
+  });
+}
+
+module.exports = app; // Экспортируем app для возможного использования в тестах или других модулях

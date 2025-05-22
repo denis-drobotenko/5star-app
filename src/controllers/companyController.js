@@ -1,5 +1,16 @@
 const Company = require('../models').Company;
 const Client = require('../models').Client;
+const logger = require('../config/logger');
+const companyService = require('../services/companyService');
+const {
+  validateBody,
+  validateParams,
+  validateQuery,
+  companyIdSchema,
+  getAllCompaniesSchema,
+  createCompanySchema,
+  updateCompanySchema,
+} = require('../middlewares/validators/companyValidator');
 
 /**
  * Получить список всех компаний
@@ -9,18 +20,23 @@ const Client = require('../models').Client;
  * @returns {Array<Company>} 200 - Список компаний
  * @returns {Error} 500 - Ошибка сервера
  */
-async function getAll(req, res) {
+async function getAll(req, res, next) {
+  const { clientId } = req.query;
+  logger.info('[CompanyController.getAll] Request to get all companies. Query params: %o. Requesting user: %o', 
+    req.query, 
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
   try {
-    const { clientId } = req.query;
-    const whereClause = {};
-    if (clientId) {
-      whereClause.client_id = clientId;
-    }
-    const companies = await Company.findAll({ where: whereClause });
+    const companies = await companyService.getAllCompanies(clientId);
+    logger.debug('[CompanyController.getAll] Found %d companies. Sending response.', companies.length);
     res.json(companies);
-  } catch (err) {
-    console.error('Ошибка при получении компаний:', err);
-    res.status(500).json({ message: 'Ошибка сервера при получении компаний', error: err.message });
+  } catch (error) {
+    logger.error('[CompanyController.getAll] Failed to get all companies. Error: %s', error.message, {
+      error: error,
+      requestQuery: req.query,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+    next(error);
   }
 }
 
@@ -33,14 +49,27 @@ async function getAll(req, res) {
  * @returns {Error} 404 - Компания не найдена
  * @returns {Error} 500 - Ошибка сервера
  */
-async function getById(req, res) {
+async function getById(req, res, next) {
+  const companyId = req.params.id;
+  logger.info('[CompanyController.getById] Request to get company by ID: %s. Requesting user: %o', 
+    companyId, 
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
   try {
-    const company = await Company.findByPk(req.params.id);
-    if (!company) return res.status(404).json({ message: 'Компания не найдена' });
+    const company = await companyService.getCompanyById(companyId);
+    if (!company) {
+      logger.warn('[CompanyController.getById] Company not found for ID: %s', companyId);
+      return res.status(404).json({ message: 'Компания не найдена' });
+    }
+    logger.debug('[CompanyController.getById] Company found for ID %s. Sending response: %o', companyId, company);
     res.json(company);
-  } catch (err) {
-    console.error(`Ошибка при получении компании ${req.params.id}:`, err);
-    res.status(500).json({ message: 'Ошибка сервера при получении компании', error: err.message });
+  } catch (error) {
+    logger.error('[CompanyController.getById] Failed to get company by ID %s. Error: %s', companyId, error.message, {
+      error: error,
+      companyIdParam: companyId,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+    next(error);
   }
 }
 
@@ -61,30 +90,35 @@ async function getById(req, res) {
  * @returns {Error} 400 - Ошибка валидации или клиент не найден
  * @returns {Error} 500 - Ошибка сервера
  */
-async function create(req, res) {
-  const { client_id, name, inn } = req.body;
-
-  if (!client_id || !name || !inn) {
-    return res.status(400).json({ message: 'Пожалуйста, укажите client_id, name и inn' });
-  }
+async function create(req, res, next) {
+  // req.body уже провалидирован мидлваром companyValidator.createCompanySchema
+  const companyData = req.body; 
+  logger.info('[CompanyController.create] Attempting to create company. Body: %o. Requesting user: %o', 
+    companyData, 
+    req.user ? { id: req.user.id, role: req.user.role } : { id: 'undefined' }
+  );
 
   try {
-    const client = await Client.findByPk(client_id);
-    if (!client) {
-      return res.status(400).json({ message: `Клиент с ID ${client_id} не найден` });
-    }
+    // Передаем все тело запроса в сервис, так как оно уже содержит все необходимые поля
+    const newCompany = await companyService.createCompany(companyData);
 
-    const companyData = { ...req.body };
-    delete companyData.contact_persons;
-
-    const company = await Company.create(companyData);
-    res.status(201).json(company);
-  } catch (err) {
-    console.error('Ошибка при создании компании:', err);
-    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ message: 'Ошибка валидации: ' + err.errors.map(e => e.message).join(', ') });
+    logger.info('[CompanyController.create] Company created successfully. ID: %s, Name: %s', newCompany.id, newCompany.name);
+    res.status(201).json(newCompany);
+  } catch (error) {
+    if (error.status === 400) { // Кастомная ошибка от сервиса (Клиент не найден)
+        logger.warn('[CompanyController.create] Bad request for company creation: %s. Body: %o', error.message, companyData);
+        return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Ошибка сервера при создании компании', error: err.message });
+    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+      logger.warn('[CompanyController.create] Validation/Constraint error for company %s: %s. Errors: %o', companyData.name, error.message, error.errors ? error.errors.map(e => e.message) : 'N/A');
+      return res.status(400).json({ message: 'Ошибка валидации: ' + (error.errors ? error.errors.map(e => e.message).join(', ') : error.message) });
+    }
+    logger.error('[CompanyController.create] Failed to create company. Error: %s', error.message, {
+      error: error,
+      requestBody: companyData,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role } : null
+    });
+    next(error);
   }
 }
 
@@ -99,29 +133,46 @@ async function create(req, res) {
  * @returns {Error} 404 - Компания не найдена
  * @returns {Error} 500 - Ошибка сервера
  */
-async function update(req, res) {
+async function update(req, res, next) {
+  const companyId = req.params.id;
+  // req.body уже провалидирован мидлваром companyValidator.updateCompanySchema
+  const updateData = req.body;
+
+  logger.info('[CompanyController.update] Attempting to update company ID %s. Body: %o. Requesting user: %o',
+    companyId,
+    updateData,
+    req.user ? { id: req.user.id, role: req.user.role } : { id: 'undefined' }
+  );
   try {
-    const company = await Company.findByPk(req.params.id);
-    if (!company) return res.status(404).json({ message: 'Компания не найдена' });
+    const updatedCompany = await companyService.updateCompany(companyId, updateData);
+    
+    // Сервис вернет null или выбросит ошибку, если компания не найдена, 
+    // но для единообразия можно оставить проверку и в контроллере, 
+    // хотя сервис уже должен был выбросить ошибку со статусом 404.
+    // В текущей реализации сервиса, он выбрасывает ошибку, так что updatedCompany не будет null.
 
-    const { client_id } = req.body;
-    if (client_id && client_id !== company.client_id) {
-      const client = await Client.findByPk(client_id);
-      if (!client) {
-        return res.status(400).json({ message: `Клиент с ID ${client_id} для смены привязки не найден` });
-      }
+    logger.info('[CompanyController.update] Company ID %s updated successfully.', companyId);
+    res.json(updatedCompany);
+  } catch (error) {
+    if (error.status === 404) { // Ошибка "Компания не найдена" от сервиса
+      logger.warn('[CompanyController.update] Company not found for ID: %s during update. Error: %s', companyId, error.message);
+      return res.status(404).json({ message: error.message });
     }
-    const companyData = { ...req.body };
-    delete companyData.contact_persons;
-
-    await company.update(companyData);
-    res.json(company);
-  } catch (err) {
-    console.error(`Ошибка при обновлении компании ${req.params.id}:`, err);
-    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeUniqueConstraintError') {
-      return res.status(400).json({ message: 'Ошибка валидации: ' + err.errors.map(e => e.message).join(', ') });
+    if (error.status === 400) { // Ошибка "Клиент ... не найден" от сервиса
+      logger.warn('[CompanyController.update] Bad request for company update ID %s: %s. Body: %o', companyId, error.message, updateData);
+      return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Ошибка обновления', error: err.message });
+    if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
+      logger.warn('[CompanyController.update] Validation/Constraint error for company ID %s: %s. Errors: %o', companyId, error.message, error.errors ? error.errors.map(e => e.message) : 'N/A');
+      return res.status(400).json({ message: 'Ошибка валидации: ' + (error.errors ? error.errors.map(e => e.message).join(', ') : error.message) });
+    }
+    logger.error('[CompanyController.update] Failed to update company ID %s. Error: %s', companyId, error.message, {
+      error: error,
+      companyIdParam: companyId,
+      requestBody: updateData,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role } : null
+    });
+    next(error);
   }
 }
 
@@ -134,16 +185,42 @@ async function update(req, res) {
  * @returns {Error} 404 - Компания не найдена
  * @returns {Error} 500 - Ошибка сервера
  */
-async function remove(req, res) {
+async function remove(req, res, next) {
+  const companyId = req.params.id;
+  logger.info('[CompanyController.remove] Attempting to delete company ID %s. Requesting user: %o', 
+    companyId, 
+    req.user ? { id: req.user.id, role: req.user.role } : { id: 'undefined' }
+  );
+
   try {
-    const company = await Company.findByPk(req.params.id);
-    if (!company) return res.status(404).json({ message: 'Компания не найдена' });
-    await company.destroy();
-    res.json({ message: 'Компания удалена' });
-  } catch (err) {
-    console.error(`Ошибка при удалении компании ${req.params.id}:`, err);
-    res.status(500).json({ message: 'Ошибка сервера при удалении компании', error: err.message });
+    await companyService.deleteCompany(companyId);
+    logger.info('[CompanyController.remove] Company ID %s deleted successfully.', companyId);
+    res.status(204).send(); // Стандартный ответ для успешного удаления
+
+  } catch (error) {
+    if (error.status === 404) { // Ошибка "Компания не найдена" от сервиса
+      logger.warn('[CompanyController.remove] Company not found for ID: %s during delete attempt. Error: %s', companyId, error.message);
+      return res.status(404).json({ message: error.message });
+    }
+    // Обработка других ошибок, например, если компания связана с другими сущностями и не может быть удалена (если такая логика есть в сервисе)
+    // if (error.name === 'SequelizeForeignKeyConstraintError') {
+    //   logger.warn('[CompanyController.remove] Cannot delete company ID %s due to foreign key constraints. Error: %s', companyId, error.message);
+    //   return res.status(400).json({ message: 'Невозможно удалить компанию, так как с ней связаны другие данные.' });
+    // }
+    logger.error('[CompanyController.remove] Failed to delete company ID %s. Error: %s', companyId, error.message, {
+      error: error,
+      companyIdParam: companyId,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role } : null
+    });
+    next(error);
   }
 }
 
-module.exports = { getAll, getById, create, update, remove }; 
+module.exports = {
+  getAll: [validateQuery(getAllCompaniesSchema), getAll],
+  getById: [validateParams(companyIdSchema), getById],
+  create: [validateBody(createCompanySchema), create],
+  update: [validateParams(companyIdSchema), validateBody(updateCompanySchema), update],
+  remove: [validateParams(companyIdSchema), remove],
+  // TODO: Добавить эндпоинты для управления представителями компаний
+}; 

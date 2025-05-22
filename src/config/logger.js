@@ -1,45 +1,57 @@
 const winston = require('winston');
 const path = require('path');
+require('winston-daily-rotate-file'); // Добавляем импорт
 
-// НЕПОСРЕДСТВЕННАЯ ПРОВЕРКА ЗАПУСКА ФАЙЛА ЛОГГЕРА
-// console.log('[logger.js] Script execution STARTED.'); 
+const logsDir = path.join(__dirname, '../../logs'); 
+const logFilePath = path.join(logsDir, 'app.log');
 
-// Определяем путь к файлу логов
-const logFilePath = path.join(__dirname, '../../logs/app.log');
-// console.log(`[logger.js] Log file path determined as: ${logFilePath}`);
+const { combine, timestamp, printf, colorize, errors, json } = winston.format;
+
+// Определяем уровень логирования из переменной окружения или по умолчанию 'info'
+const validLogLevels = ['error', 'warn', 'info', 'http', 'verbose', 'debug', 'silly'];
+const logLevel = process.env.LOG_LEVEL && validLogLevels.includes(process.env.LOG_LEVEL) ? process.env.LOG_LEVEL : 'info';
 
 // Создаем логгер
 let logger;
 try {
   logger = winston.createLogger({
-    level: 'debug',
+    level: logLevel, // Используем определенный уровень логирования
     format: winston.format.combine(
       winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      winston.format.printf(info => `${info.timestamp} [${info.level.toUpperCase()}]: ${info.message}`)
+      winston.format.errors({ stack: true }), // Логируем стек ошибок
+      winston.format.splat(), // Для форматирования типа logger.info('Сообщение %s', 'значение')
+      winston.format.json() // Основной формат - JSON для лучшей обработки логов
     ),
     transports: [
-      // Вывод в консоль (оставляем как есть, или можно тоже debug)
+      /* // Временно отключаем консольный транспорт для диагностики EPIPE
       new winston.transports.Console({
-        level: 'debug', // Также для консоли, чтобы видеть debug сообщения и там
+        level: logLevel, // Уровень для консоли также берем из переменной
         format: winston.format.combine(
           winston.format.colorize(),
-          winston.format.printf(info => `${info.timestamp} [${info.level}]: ${info.message}`)
+          winston.format.printf(info => `${info.timestamp} [${info.level}] ${info.message}${info.stack ? '\n' + info.stack : ''}`)
         )
       }),
-      // Запись в файл
-      new winston.transports.File({ 
-        filename: logFilePath,
-        level: 'debug' // Изменено на debug
+      */
+      // Заменяем стандартный File транспорт на DailyRotateFile
+      new winston.transports.DailyRotateFile({
+        filename: path.join(logsDir, 'app-%DATE%.log'), // Шаблон имени файла
+        datePattern: 'YYYY-MM-DD', // Паттерн даты для имени файла
+        zippedArchive: true, // Сжимать старые логи
+        maxSize: '20m', // Максимальный размер файла (например, 20MB)
+        maxFiles: '14d', // Хранить логи за последние 14 дней
+        level: logLevel, 
+        format: winston.format.combine(
+            winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+            winston.format.errors({ stack: true }),
+            winston.format.json()
+        )
       })
     ],
     exitOnError: false
   });
-  // console.log('[logger.js] Winston logger created successfully.');
   // logger.info('[logger.js] Winston logger initialized and test message sent to file.'); 
-  // logger.debug('[logger.js] Debug level logging is now enabled.'); 
 } catch (e) {
-  console.error('[logger.js] CRITICAL ERROR during Winston logger creation:', e); // Лог в консоль
-  // Создаем заглушку для logger, чтобы приложение не упало при попытке его использовать
+  console.error('[logger.js] CRITICAL ERROR during Winston logger creation:', e); 
   logger = {
     info: (msg, meta) => console.info('[DummyLogger-INFO]', msg, meta || ''),
     warn: (msg, meta) => console.warn('[DummyLogger-WARN]', msg, meta || ''),
@@ -55,7 +67,7 @@ process.on('unhandledRejection', (reason, promise) => {
     reason_stack: reason instanceof Error ? reason.stack : undefined,
     promise_object: JSON.stringify(promise)
   };
-  console.error('[process.on] ', logMessage, details); // Дублируем в консоль
+  // console.error('[process.on] ', logMessage, details); // Дублируем в консоль
   logger.error(logMessage, details);
 });
 
@@ -65,11 +77,19 @@ process.on('uncaughtException', (error) => {
     error_message: error instanceof Error ? error.message : 'N/A',
     error_stack: error instanceof Error ? error.stack : 'N/A',
     error_name: error instanceof Error ? error.name : 'N/A',
-    error_details: JSON.stringify(error, Object.getOwnPropertyNames(error))
+    error_details: typeof error === 'object' && error !== null ? JSON.stringify(error, Object.getOwnPropertyNames(error)) : String(error)
   };
-  console.error('[process.on] ', logMessage, details); // Дублируем в консоль
-  logger.error(logMessage, details);
-  // process.exit(1); 
+  // Попытка записать критическую ошибку напрямую в stderr перед выходом
+  const simplifiedError = `${new Date().toISOString()} [CRITICAL_ERROR_FALLBACK] ${logMessage}: ${details.error_message}\nStack: ${details.error_stack}\n`;
+  try {
+    process.stderr.write(simplifiedError);
+  } catch (e) {
+    // Если даже это не сработало, ничего не поделаешь
+  }
+
+  // console.error('[process.on] ', logMessage, details); // Дублируем в консоль
+  logger.error(logMessage, details); // По-прежнему пытаемся логировать через Winston
+  process.exit(1); // Обязательно завершаем процесс
 });
 
 module.exports = logger; 

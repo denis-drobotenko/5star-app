@@ -1,5 +1,5 @@
 {
-  "generated_at": "2025-05-19T15:47:22.741Z",
+  "generated_at": "2025-05-20T07:43:51.150Z",
   "functions": [
     {
       "name": "login",
@@ -223,31 +223,209 @@
       "description": "Удалить компанию (юрлицо клиента)"
     },
     {
+      "name": "getAll",
+      "route": "GET /api/field-mappings",
+      "file": "src/controllers/fieldMappingController.js",
+      "params": [
+        "req.user:object",
+        "req.user.client_id:number"
+      ],
+      "returns": [
+        "Array.<FieldMapping>",
+        "Error"
+      ],
+      "description": "Get all field mappings, optionally filtered by user's client_id."
+    },
+    {
+      "name": "getByClientId",
+      "route": "GET /api/field-mappings/client/{clientId}",
+      "file": "src/controllers/fieldMappingController.js",
+      "params": [
+        "clientId.path.required:number",
+        "req.user:object",
+        "req.user.role:string",
+        "req.user.client_id:number"
+      ],
+      "returns": [
+        "Array.<FieldMapping>",
+        "object",
+        "Error"
+      ],
+      "description": "Get all field mappings for a specific client."
+    },
+    {
+      "name": "getById",
+      "route": "GET /api/field-mappings/{id}",
+      "file": "src/controllers/fieldMappingController.js",
+      "params": [
+        "id.path.required:number",
+        "req.user:object",
+        "req.user.client_id:number"
+      ],
+      "returns": [
+        "FieldMapping",
+        "object",
+        "object",
+        "Error"
+      ],
+      "description": "Get a specific field mapping by its ID."
+    },
+    {
+      "name": "create",
+      "route": "POST /api/field-mappings",
+      "file": "src/controllers/fieldMappingController.js",
+      "params": [
+        "req.body.required:object",
+        "req.body.name.required:string",
+        "req.body.mapping.required:object",
+        "req.body.client_id:number",
+        "req.body.sample_data_url:string",
+        "req.user:object",
+        "req.user.client_id:number"
+      ],
+      "returns": [
+        "FieldMapping",
+        "object",
+        "object",
+        "Error"
+      ],
+      "description": "Create a new field mapping."
+    },
+    {
+      "name": "update",
+      "route": "PUT /api/field-mappings/{id}",
+      "file": "src/controllers/fieldMappingController.js",
+      "params": [
+        "id.path.required:number",
+        "req.body.required:object",
+        "req.body.name:string",
+        "req.body.mapping:object",
+        "req.body.client_id:number",
+        "req.body.sample_data_url:string",
+        "req.user:object",
+        "req.user.client_id:number",
+        "req.user.role:string"
+      ],
+      "returns": [
+        "FieldMapping",
+        "object",
+        "object",
+        "object",
+        "Error"
+      ],
+      "description": "Update an existing field mapping."
+    },
+    {
+      "name": "delete",
+      "route": "DELETE /api/field-mappings/{id}",
+      "file": "src/controllers/fieldMappingController.js",
+      "params": [
+        "id.path.required:number",
+        "req.user:object",
+        "req.user.client_id:number",
+        "req.user.role:string"
+      ],
+      "returns": [
+        "object",
+        "object",
+        "object",
+        "Error"
+      ],
+      "description": "Delete a field mapping."
+    },
+    {
       "name": "uploadSample",
       "route": "POST /api/field-mappings/upload-sample",
       "file": "src/controllers/fieldMappingController.js",
       "params": [
-        "req.body.required:object"
+        "sampleFile.formData.required:file",
+        "client_id.formData.required:number",
+        "mappingName.formData.required:string",
+        "req.user:object",
+        "req.user.client_id:number"
       ],
       "returns": [
+        "Object",
+        "object",
         "object",
         "Error"
       ],
-      "description": "Загрузить пример данных в S3."
+      "description": "Upload a sample XLSX file to S3 for a field mapping."
     },
     {
       "name": "getSignedUrl",
-      "route": "GET /api/field-mappings/get-signed-url",
+      "route": "GET /api/field-mappings/signedUrl",
       "file": "src/controllers/fieldMappingController.js",
       "params": [
-        "key.query.required:string"
+        "key.query.required:string",
+        "req.user:object"
+      ],
+      "returns": [
+        "Object",
+        "object",
+        "Error"
+      ],
+      "description": "Get a pre-signed URL for accessing an S3 object (e.g., a sample XLSX file)."
+    },
+    {
+      "name": "getAllImports",
+      "route": "GET /api/imports",
+      "file": "src/controllers/importController.js",
+      "params": [
+        "query.clientId:number",
+        "query.search:string",
+        "query.sortBy:string",
+        "query.sortOrder:string",
+        "query.page:number",
+        "query.limit:number"
       ],
       "returns": [
         "object",
-        "Error",
         "Error"
       ],
-      "description": "Получить подписанный URL для доступа к файлу в S3."
+      "description": "Получить список всех историй загрузок"
+    },
+    {
+      "name": "initiateImport",
+      "route": "POST /api/imports/initiate",
+      "file": "src/controllers/importController.js",
+      "params": [
+        "body.custom_name:string",
+        "body.client_id.required:number",
+        "body.field_mapping_id.required:number"
+      ],
+      "returns": [
+        "ImportHistory",
+        "Error"
+      ],
+      "description": "Инициировать новую загрузку (создать запись в ImportHistory)"
+    },
+    {
+      "name": "uploadAndProcessFile",
+      "route": "POST /api/imports/:importId/upload-file",
+      "file": "src/controllers/importController.js",
+      "params": [
+        "importId.path.required:number",
+        "importFile.formData.required:file"
+      ],
+      "returns": [
+        "object",
+        "Error"
+      ],
+      "description": "Загрузить файл для существующей записи ImportHistory и обработать его"
+    },
+    {
+      "name": "executeImport",
+      "route": "POST /api/imports/:importId/execute",
+      "file": "src/controllers/importController.js",
+      "params": [
+        "importId.path.required:number"
+      ],
+      "returns": [
+        "object",
+        "Error"
+      ],
+      "description": "Загрузить обработанные данные в таблицу orders"
     },
     {
       "name": "getAll",
@@ -337,6 +515,35 @@
         "Error"
       ],
       "description": "Удалить пользователя"
+    },
+    {
+      "name": "uploadXLSX",
+      "route": "POST /api/field-mappings/upload-xlsx",
+      "file": "src/controllers/xlsxController.js",
+      "params": [
+        "file.formData.required:file"
+      ],
+      "returns": [
+        "object",
+        "Error",
+        "Error"
+      ],
+      "description": "Загружает и парсит XLSX файл, сохраняет его в S3."
+    },
+    {
+      "name": "processS3XLSX",
+      "route": "POST /api/field-mappings/process-s3-xlsx",
+      "file": "src/controllers/xlsxController.js",
+      "params": [
+        "s3Key.body.required:string"
+      ],
+      "returns": [
+        "object",
+        "Error",
+        "Error",
+        "Error"
+      ],
+      "description": "Скачивает XLSX файл из S3 по ключу и парсит его."
     }
   ],
   "db_schema": {
@@ -374,7 +581,8 @@
       "cost_price": "float",
       "entry_date": "timestamp",
       "entry_user": "varchar",
-      "session_id": "varchar"
+      "session_id": "int",
+      "client_id": "int"
     },
     "companies": {
       "id": "serial",
@@ -399,19 +607,23 @@
     },
     "field_mappings": {
       "id": "serial",
-      "company_id": "int",
-      "client_field": "varchar",
-      "system_field": "varchar",
-      "created_at": "timestamp"
+      "client_id": "int",
+      "name": "varchar(255)",
+      "mapping": "jsonb",
+      "sample_data_url": "text",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
     },
     "import_history": {
       "id": "serial",
-      "company_id": "int",
+      "client_id": "int",
       "user_id": "int",
       "file_name": "varchar",
+      "custom_name": "varchar(255)",
       "source_type": "varchar",
       "source_link": "varchar",
       "status": "varchar",
+      "field_mapping_id": "int",
       "created_at": "timestamp"
     },
     "dictionaries": {

@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const logger = require('../config/logger');
 const emailService = require('../services/emailService');
+const authService = require('../services/authService');
+const { validate, loginSchema, registerSchema, requestPasswordResetSchema, resetPasswordSchema } = require('../middlewares/validators/authValidator');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
 
@@ -16,65 +18,26 @@ const JWT_SECRET = process.env.JWT_SECRET || 'dev_secret_key';
  * @returns {Object} 200 - JWT и данные пользователя
  * @returns {Error} 401 - Неверный email или пароль
  */
-function login(req, res) {
-  logger.info(`[AuthController.login] ENTERED function. Request headers: ${JSON.stringify(req.headers)}, Request body: ${JSON.stringify(req.body)}`);
-
+async function login(req, res, next) {
   const { email, password } = req.body;
-  logger.info(`[AuthController.login] Попытка входа. Email: ${email}. Тело запроса: ${JSON.stringify(req.body)}`);
-  User.findOne({ 
-    where: { email },
-    include: [{
-      model: Company,
-      as: 'company',
-      attributes: ['id', 'name']
-    }]
-  })
-    .then(user => {
-      logger.info(`[AuthController.login] User.findOne .then() callback ENTERED. User found: ${!!user}`);
-      if (!user) {
-        logger.warn(`[AuthController.login] Пользователь с email ${email} не найден.`);
-        return res.status(401).json({ message: 'Неверный email или пароль' });
-      }
-      logger.info(`[AuthController.login] Пользователь ${email} найден. ID: ${user.id}, Role: ${user.role}. Сравнение пароля... Поле хеша: ${user.password_hash ? 'доступно' : 'НЕ ДОСТУПНО'}`);
-      return bcrypt.compare(password, user.password_hash)
-        .then(isMatch => {
-          logger.info(`[AuthController.login] bcrypt.compare .then() callback ENTERED. isMatch: ${isMatch}`);
-          logger.info(`[AuthController.login] Результат сравнения пароля для ${email}: ${isMatch}`);
-          if (!isMatch) {
-            logger.warn(`[AuthController.login] Неверный пароль для пользователя ${email}.`);
-            return res.status(401).json({ message: 'Неверный email или пароль' });
-          }
-          logger.info(`[AuthController.login] Пароль для ${email} верный. Генерация JWT...`);
-          
-          const token = jwt.sign({ 
-            id: user.id, 
-            role: user.role, 
-            email: user.email,
-            company_id: user.company_id
-          }, JWT_SECRET, { expiresIn: '12h' });
-          
-          logger.info(`[AuthController.login] JWT для ${email} сгенерирован. Отправка ответа.`);
-          res.json({ 
-            token, 
-            user: { 
-              id: user.id, 
-              email: user.email, 
-              fullName: user.fullName,
-              role: user.role,
-              company_id: user.company_id,
-              company: user.company
-            } 
-          });
-        })
-        .catch(bcryptErr => {
-          logger.error(`[AuthController.login] bcrypt.compare .catch() callback ENTERED. Error: ${bcryptErr.message}`, { error: bcryptErr, stack: bcryptErr.stack });
-          res.status(500).json({ message: 'Ошибка сервера при проверке пароля', error: bcryptErr.message });
-        });
-    })
-    .catch(err => {
-      logger.error(`[AuthController.login] User.findOne .catch() callback ENTERED. Error: ${err.message}`, { error: err, stack: err.stack });
-      res.status(500).json({ message: 'Ошибка сервера', error: err.message });
+  const { password: _, ...bodyToLog } = req.body; 
+  logger.info('[AuthController.login] Attempting login for email: %s. Body: %o', email, bodyToLog);
+
+  try {
+    const result = await authService.loginUser(email, password);
+    logger.info('[AuthController.login] Login successful for %s. Sending response.', email);
+    res.json(result);
+  } catch (error) {
+    logger.error('[AuthController.login] Login failed for email %s. Error: %s', email, error.message, {
+      // error object itself might be logged by the service or here if needed for controller context
+      requestBody: bodyToLog,
+      // email: email // Already in message
     });
+    if (error.status === 401) {
+      return res.status(401).json({ message: error.message });
+    }
+    next(error); // For other unexpected errors
+  }
 }
 
 /**
@@ -87,16 +50,29 @@ function login(req, res) {
  * @returns {Object} 201 - Данные созданного пользователя
  * @returns {Error} 400 - Email уже существует
  */
-function register(req, res) {
-  const { email, password, fullName, role } = req.body;
-  User.findOne({ where: { email } })
-    .then(exists => {
-      if (exists) return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
-      return bcrypt.hash(password, 10)
-        .then(hash => User.create({ email, password: hash, fullName, role }))
-        .then(user => res.status(201).json({ id: user.id, email: user.email, fullName: user.fullName, role: user.role }));
-    })
-    .catch(err => res.status(500).json({ message: 'Ошибка сервера', error: err.message }));
+async function register(req, res, next) {
+  // Данные пользователя из тела запроса (провалидированы схемой authValidator.registerSchema)
+  const userData = req.body; 
+  const { password: _, ...bodyToLog } = req.body;
+  logger.info('[AuthController.register] Attempting to register user. Email: %s, Body: %o', userData.email, bodyToLog);
+
+  try {
+    const newUser = await authService.registerUser(userData);
+    logger.info('[AuthController.register] User %s registered successfully. Sending response.', newUser.email);
+    res.status(201).json(newUser);
+  } catch (error) {
+    logger.error('[AuthController.register] Registration failed for email %s. Error: %s', userData.email, error.message, {
+      // error: error, // logged by service
+      requestBody: bodyToLog
+    });
+    if (error.status === 400) {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error.name === 'SequelizeValidationError') { // Эта ошибка должна обрабатываться в сервисе, но на всякий случай
+      return res.status(400).json({ message: 'Ошибка валидации: ' + error.errors.map(e => e.message).join(', ') });
+    }
+    next(error);
+  }
 }
 
 /**
@@ -105,25 +81,26 @@ function register(req, res) {
  * @returns {Object} 200 - Токен валиден
  * @returns {Error} 401 - Токен невалиден
  */
-function verify(req, res) {
+function verify(req, res, next) {
   const authHeader = req.headers.authorization;
-  logger.info(`[AuthVerify] Запрос на /auth/verify. Заголовок Authorization: ${authHeader}`);
+  logger.info('[AuthController.verify] Verification request. Authorization header present: %s', !!authHeader);
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    logger.warn('[AuthVerify] Заголовок Authorization отсутствует или не начинается с "Bearer ".');
-    return res.status(401).json({ message: 'Требуется авторизация' });
+    logger.warn('[AuthController.verify] Authorization header missing or not Bearer.');
+    return res.status(401).json({ message: 'Требуется авторизация (отсутствует Bearer token)' });
   }
   
   const token = authHeader.split(' ')[1];
-  logger.info(`[AuthVerify] Извлеченный токен: ${token}`);
+  // logger.debug('[AuthController.verify] Extracted token: %s', token ? 'present' : 'absent'); // Service will log
 
   try {
-    const payload = jwt.verify(token, JWT_SECRET);
-    logger.info(`[AuthVerify] Токен валиден. Payload: ${JSON.stringify(payload)}`);
-    res.json({ valid: true, user: payload });
-  } catch (err) {
-    logger.error(`[AuthVerify] Ошибка проверки токена: ${err.message}. Токен: ${token}`);
-    res.status(401).json({ message: 'Неверный или просроченный токен', error: err.message });
+    const userPayload = authService.verifyToken(token);
+    logger.info('[AuthController.verify] Token successfully verified by service. User: %o', userPayload);
+    res.json({ valid: true, user: userPayload });
+  } catch (error) {
+    // Ошибка от сервиса уже будет содержать статус 401 и сообщение
+    logger.warn('[AuthController.verify] Token verification failed by service. Error: %s', error.message, { originalError: error.originalError });
+    res.status(error.status || 401).json({ message: error.message, ...(error.originalError && { details: error.originalError }) });
   }
 }
 
@@ -135,35 +112,36 @@ function verify(req, res) {
  * @returns {Error} 404 - Пользователь не найден
  * @returns {Error} 500 - Ошибка сервера
  */
-async function requestPasswordReset(req, res) {
-  logger.info(`[AuthController.requestPasswordReset] Request received for email: ${req.body.email}`);
+async function requestPasswordReset(req, res, next) {
+  const { email } = req.body;
+  logger.info('[AuthController.requestPasswordReset] Request received for email: %s. Requesting user (if any): %o', 
+    email, 
+    req.user ? { id: req.user.id, role: req.user.role } : { id: 'undefined' }
+  );
+
   try {
-    const { email } = req.body;
-    const user = await User.findOne({ where: { email } });
+    // Предполагаем, что FRONTEND_URL доступен, например, из .env
+    // TODO: Убедиться, что process.env.FRONTEND_URL настроен и корректен
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173'; // Дефолт для локальной разработки
+    const resetUrlBase = `${frontendUrl}/reset-password?token=`; 
 
-    if (!user) {
-      logger.warn(`[AuthController.requestPasswordReset] User with email ${email} not found. Proceeding to send generic success message.`);
-      return res.status(200).json({ message: 'Если пользователь с таким email существует, ему будет отправлена ссылка для сброса пароля.' });
-    }
+    // Сервис вернет true если пользователь найден и email отправлен (или должен был быть отправлен)
+    // Сервис вернет false если пользователь не найден (чтобы не раскрывать информацию)
+    // или если произошла ошибка отправки email (сервис это логирует)
+    await authService.requestPasswordResetForUser(email, resetUrlBase);
 
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-
-    const expiresAt = new Date();
-    expiresAt.setHours(expiresAt.getHours() + 1);
-
-    user.reset_password_token = hashedToken;
-    user.reset_password_expires_at = expiresAt;
-    await user.save();
-
-    await emailService.sendPasswordResetEmail(user.email, resetToken);
-    logger.info(`[AuthController.requestPasswordReset] Password reset process initiated for ${email}. Email should be sent.`);
-
+    // Всегда возвращаем одинаковый ответ, чтобы не раскрывать, существует ли email в системе
+    logger.info('[AuthController.requestPasswordReset] Generic success response sent for email %s (actual outcome logged by service).', email);
     res.status(200).json({ message: 'Если пользователь с таким email существует, ему будет отправлена ссылка для сброса пароля.' });
 
   } catch (error) {
-    logger.error('[AuthController.requestPasswordReset] Error during password reset request:', { errorMessage: error.message, errorStack: error.stack, errorFull: error });
-    res.status(500).json({ message: 'Ошибка сервера при запросе сброса пароля.' });
+    // Этот блок будет вызван только если сам сервис выбросит неожиданную ошибку (не ошибку "пользователь не найден" или "ошибка отправки email")
+    logger.error('[AuthController.requestPasswordReset] Failed to process password reset request for %s. Error: %s', email, error.message, {
+      error: error,
+      requestBody: req.body,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role } : null
+    });
+    next(error);
   }
 }
 
@@ -176,64 +154,42 @@ async function requestPasswordReset(req, res) {
  * @returns {Error} 400 - Невалидный/просроченный токен или ошибка валидации
  * @returns {Error} 500 - Ошибка сервера
  */
-async function resetPassword(req, res) {
-  logger.info(`[AuthController.resetPassword] Request received. Body: ${JSON.stringify(req.body)}`);
+async function resetPassword(req, res, next) {
+  const { token, password } = req.body;
+  const { password: _, ...bodyToLog } = req.body;
+  logger.info('[AuthController.resetPassword] Attempting to reset password with token (first 8 chars): %s. Body: %o', 
+    token ? token.substring(0,8) : '[NO TOKEN PROVIDED]', 
+    bodyToLog
+  );
+
   try {
-    const { token, password } = req.body;
-
-    if (!token || !password) {
-      logger.warn(`[AuthController.resetPassword] Token or password missing. Token: ${token}, Password provided: ${!!password}`);
-      return res.status(400).json({ message: 'Токен и новый пароль обязательны.' });
-    }
-    
-    if (password.length < 6) {
-        logger.warn(`[AuthController.resetPassword] Password too short. Length: ${password.length}`);
-        return res.status(400).json({ message: 'Пароль должен быть не менее 6 символов.'});
-    }
-
-    // Хешируем токен, полученный от клиента, для сравнения с тем, что в БД
-    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
-    logger.info(`[AuthController.resetPassword] Received raw token: ${token}, Hashed token for DB lookup: ${hashedToken}`);
-
-    logger.info(`[AuthController.resetPassword] Preparing to query user. Current time for query: ${new Date().toISOString()}`); // Новый лог
-    const user = await User.findOne({
-      where: {
-        reset_password_token: hashedToken,
-        reset_password_expires_at: { [Op.gt]: new Date() }
-      }
-    });
-    logger.info(`[AuthController.resetPassword] User.findOne executed. User found: ${!!user ? user.id : 'null'}`); // Новый лог
-
-    if (!user) {
-      logger.warn(`[AuthController.resetPassword] User not found or token expired for hashed token: ${hashedToken}. Current time: ${new Date().toISOString()}`);
-      // Дополнительно проверим, есть ли токен вообще, но он истек
-      const expiredUser = await User.findOne({ where: { reset_password_token: hashedToken } });
-      if (expiredUser) {
-        logger.warn(`[AuthController.resetPassword] Token was found for hashed token: ${hashedToken}, but it has expired. Expiry time: ${expiredUser.reset_password_expires_at}`);
-      } else {
-        logger.warn(`[AuthController.resetPassword] No user record found for hashed token: ${hashedToken} at all.`);
-      }
-      return res.status(400).json({ message: 'Токен для сброса пароля недействителен или истек.' });
-    }
-
-    logger.info(`[AuthController.resetPassword] User found for token. User ID: ${user.id}. Proceeding to hash new password.`);
-    const newPasswordHash = await bcrypt.hash(password, 10);
-
-    user.password_hash = newPasswordHash;
-    user.reset_password_token = null;
-    user.reset_password_expires_at = null;
-    await user.save();
-
-    logger.info(`[AuthController.resetPassword] Password for user ${user.id} has been reset successfully.`);
-    res.status(200).json({ message: 'Пароль успешно изменен.' });
+    await authService.resetUserPassword(token, password);
+    logger.info('[AuthController.resetPassword] Password reset successful for token (first 8 chars): %s.', token ? token.substring(0,8) : '[NO TOKEN PROVIDED]');
+    res.json({ message: 'Пароль успешно сброшен.' });
 
   } catch (error) {
-    logger.error(
-        `[AuthController.resetPassword] Critical error during password reset process. Message: ${error.message}. Stack: ${error.stack}. Error Name: ${error.name}. Error Code: ${error.code}`, 
-        { errorFull: JSON.stringify(error, Object.getOwnPropertyNames(error), 2) } // Улучшенное логирование объекта ошибки
+    logger.error('[AuthController.resetPassword] Failed to reset password for token (first 8 chars): %s. Error: %s', 
+      token ? token.substring(0,8) : '[NO TOKEN PROVIDED]', 
+      error.message, 
+      {
+        // error: error, // logged by service
+        requestBody: bodyToLog
+      }
     );
-    res.status(500).json({ message: 'Ошибка сервера при сбросе пароля.' });
+    if (error.status === 400) {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error.name === 'SequelizeValidationError') { // Если вдруг валидация на модель User не прошла
+      return res.status(400).json({ message: 'Ошибка валидации нового пароля: ' + error.errors.map(e => e.message).join(', ') });
+    }
+    next(error);
   }
 }
 
-module.exports = { login, register, verify, requestPasswordReset, resetPassword }; 
+module.exports = {
+  login: [validate(loginSchema), login],
+  register: [validate(registerSchema), register],
+  verify,
+  requestPasswordReset: [validate(requestPasswordResetSchema), requestPasswordReset],
+  resetPassword: [validate(resetPasswordSchema), resetPassword],
+}; 

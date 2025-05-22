@@ -1,5 +1,33 @@
 # Рабочий план реализации требований ТЗ
 
+## Технический долг и улучшение кода
+- [ ] **Frontend Рефакторинг (FSD):** Привести структуру frontend-части приложения (`app/src/frontend/src/`) в соответствие с принципами Feature-Sliced Design (FSD).
+    - [ ] Анализ текущей структуры и определение необходимых слоев (app, pages, widgets, features, entities, shared).
+    - [ ] Создание новой структуры директорий согласно FSD.
+    - [ ] Перемещение существующих компонентов, страниц, сервисов и утилит в соответствующие слои FSD.
+    - [ ] Обновление импортов и связей между модулями.
+    - [ ] Тестирование после рефакторинга.
+- [x] **Базы данных:**
+    - [x] Заменить sequelize.sync() на систему миграций (например, Umzug) для production.
+    - [x] Вынести логику одноразовой миграции данных из syncModels в отдельные скрипты миграций.
+    - [x] Внедрить использование транзакций БД для атомарных операций.
+- [x] **Валидация и безопасность:**
+    - [x] Внедрить валидацию входных данных во всех контроллерах (например, Joi или express-validator). (auth, user, client, company, fieldMapping, xlsx (частично) - ✅)
+    - [x] Провести аудит безопасности с помощью \`npm audit\` и устранить обнаруженные уязвимости.
+- [x] **Логирование:**
+    - [x] Сделать уровень логирования настраиваемым через переменные окружения.
+    - [x] Стандартизировать формат логирования ошибок в контроллерах.
+- [x] **Рефакторинг и структура кода:**
+    - [x] Обновить AWS SDK с v2 до v3.
+    - [x] Вынести общие вспомогательные функции (например, `sanitizeFileName`) в модуль утилит.
+    - [x] Рассмотреть выделение бизнес-логики из контроллеров в сервисный слой.
+    - [x] Настроить и проверить генерацию `docs/AI_FUNCTIONS.json` на основе JSDoc комментариев.
+- [ ] **Frontend:**
+    - [x] Вынести `DebugLogsButton` в `src/frontend/src/components/DebugLogsButton.jsx`. (Перемещено из "Рефакторинг Frontend структуры")
+    - [ ] Проверить работоспособность приложения после всех рефакторингов. (Объединено и перемещено)
+
+
+
 ## 1. Пользователи и роли
 - [x] CRUD для пользователей (создание, редактирование, удаление, получение по id и списком)
 - [x] Интерфейс для управления пользователями (frontend)
@@ -14,7 +42,7 @@
 - [x] Интерфейс для управления представителями компаний (frontend)
 
 ## 3. Сопоставление полей (маппинг)
-- [ ] CRUD для маппинга полей (field_mappings)
+- [x] CRUD для маппинга полей (field_mappings)
 - [x] Интерфейс для настройки маппинга полей (frontend)
 
 ## 4. Импорт и обработка данных о продажах
@@ -41,24 +69,6 @@
 - [ ] Выгрузка списков (CSV, XLSX)
 - [ ] Интерфейс для выгрузки списков (frontend)
 
-## Рефакторинг Frontend структуры
 
-- [x] Создать базовую структуру директорий для frontend (`components`, `pages`, `layouts`, `contexts`, `constants`).
-- [x] Вынести `AuthProvider` и `useAuth` в `src/frontend/src/contexts/AuthContext.jsx`.
-- [x] Вынести `API_URL`, `APP_NAME` и цветовые константы в `src/frontend/src/constants/appConstants.js`.
-- [x] Вынести `LoginPage` в `src/frontend/src/pages/LoginPage.jsx`.
-- [x] Вынести `DashboardLayout` в `src/frontend/src/layouts/DashboardLayout.jsx`.
-- [x] Вынести `DashboardHome` в `src/frontend/src/pages/DashboardHomePage.jsx`.
-- [x] Вынести `CompaniesPage` (Юрлица) в `src/frontend/src/pages/CompaniesPage.jsx`.
-- [x] Вынести `ClientsPage` в `src/frontend/src/pages/ClientsPage.jsx`.
-- [x] Вынести `UsersPage` в `src/frontend/src/pages/UsersPage.jsx`.
-- [x] Вынести `targetFieldMappings` и `requiredFields` из `FieldMappingPage` в `src/frontend/src/constants/fieldMappingConstants.js`.
-- [x] Вынести `FieldMappingPage` в `src/frontend/src/pages/FieldMappingPage.jsx`.
-- [x] Вынести `SettingsPage` в `src/frontend/src/pages/SettingsPage.jsx`.
-- [ ] Вынести `DebugLogsButton` в `src/frontend/src/components/DebugLogsButton.jsx`.
-- [x] Обновить все импорты в затронутых файлах.
-- [ ] Проверить работоспособность приложения после рефакторинга.
-
----
 
 > По мере реализации задач отмечать их как выполненные ([x]). 

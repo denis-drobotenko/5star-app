@@ -37,7 +37,8 @@ CREATE TABLE "orders" (
   "cost_price" float,
   "entry_date" timestamp,
   "entry_user" varchar,
-  "session_id" varchar
+  "session_id" int,
+  "client_id" int
 );
 
 CREATE TABLE "companies" (
@@ -65,20 +66,24 @@ CREATE TABLE "company_representatives" (
 
 CREATE TABLE "field_mappings" (
   "id" serial PRIMARY KEY,
-  "company_id" int NOT NULL,
-  "client_field" varchar NOT NULL,
-  "system_field" varchar NOT NULL,
-  "created_at" timestamp DEFAULT (now())
+  "client_id" int NOT NULL,
+  "name" varchar(255) NOT NULL,
+  "mapping" jsonb NOT NULL,
+  "sample_data_url" text,
+  "created_at" timestamp DEFAULT (now()),
+  "updated_at" timestamp DEFAULT (now())
 );
 
 CREATE TABLE "import_history" (
   "id" serial PRIMARY KEY,
-  "company_id" int NOT NULL,
+  "client_id" int,
   "user_id" int NOT NULL,
   "file_name" varchar NOT NULL,
+  "custom_name" varchar(255),
   "source_type" varchar,
   "source_link" varchar,
   "status" varchar NOT NULL,
+  "field_mapping_id" int,
   "created_at" timestamp DEFAULT (now())
 );
 
@@ -123,11 +128,13 @@ CREATE TABLE "clients" (
 
 ALTER TABLE "company_representatives" ADD FOREIGN KEY ("company_id") REFERENCES "companies" ("id");
 
-ALTER TABLE "field_mappings" ADD FOREIGN KEY ("company_id") REFERENCES "companies" ("id");
+ALTER TABLE "field_mappings" ADD FOREIGN KEY ("client_id") REFERENCES "clients" ("id");
 
-ALTER TABLE "import_history" ADD FOREIGN KEY ("company_id") REFERENCES "companies" ("id");
+ALTER TABLE "import_history" ADD FOREIGN KEY ("client_id") REFERENCES "clients" ("id");
 
 ALTER TABLE "import_history" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
+ALTER TABLE "import_history" ADD FOREIGN KEY ("field_mapping_id") REFERENCES "field_mappings" ("id");
 
 ALTER TABLE "dictionaries" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 
@@ -138,3 +145,12 @@ ALTER TABLE "aliases" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
 ALTER TABLE "blocklists" ADD FOREIGN KEY ("company_id") REFERENCES "companies" ("id");
 
 ALTER TABLE "blocklists" ADD FOREIGN KEY ("user_id") REFERENCES "users" ("id");
+
+ALTER TABLE "orders" ADD FOREIGN KEY ("client_id") REFERENCES "clients" ("id");
+
+-- Добавление администратора по умолчанию
+-- ВАЖНО: Этот INSERT будет пытаться выполниться при каждом применении schema.sql.
+-- Если пользователь 'admin' уже существует, это вызовет ошибку уникальности.
+INSERT INTO users (username, password_hash, full_name, email, role, user_type, client_id, company_id, created_at, updated_at)
+SELECT 'admin', '$2b$10$4SluI.tlGqV7ZYD4Db3WR.kb5UFqolBXOdvhhDcBbIhsnsEdu6xxu', 'Администратор', 'dda_5000@mail.ru', 'admin', 'INTERNAL', NULL, NULL, NOW(), NOW()
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE username = 'admin');

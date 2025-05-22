@@ -1,7 +1,18 @@
 const { Client, Company, User } = require('../models');
-const { s3, S3_BUCKET_NAME } = require('../config/s3'); // Импорт S3 конфигурации
+const { sequelize } = require('../models'); // Добавляем импорт sequelize
+const { s3Client, S3_BUCKET_NAME } = require('../config/s3'); // Изменено s3 на s3Client
+const { Upload } = require("@aws-sdk/lib-storage"); // Для s3.upload
+const { DeleteObjectCommand } = require("@aws-sdk/client-s3"); // для s3.deleteObject
 const logger = require('../config/logger'); // Предполагаем, что логгер есть
 const { v4: uuidv4 } = require('uuid'); // Для генерации уникальных имен файлов
+const clientService = require('../services/clientService'); // Добавляем импорт сервиса
+const {
+  validateBody,
+  validateParams,
+  clientIdSchema,
+  createClientSchema,
+  updateClientSchema,
+} = require('../middlewares/validators/clientValidator');
 
 /**
  * Получить список всех клиентов.
@@ -10,18 +21,25 @@ const { v4: uuidv4 } = require('uuid'); // Для генерации уника�
  * @returns {Array<Client>} 200 - Список клиентов
  * @returns {Error} 500 - Ошибка сервера
  */
-async function getAll(req, res) {
+async function getAll(req, res, next) {
+  logger.info('[ClientController.getAll] Request to get all clients. Headers: %o, User: %o', 
+    { authorization: req.headers.authorization ? 'present' : 'missing' },
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
   try {
-    const clients = await Client.findAll({
-      include: [
-        { model: Company, as: 'companies', attributes: ['id', 'name'] },
-        { model: User, as: 'users', attributes: ['id', 'username', 'full_name', 'email', 'user_type'], where: { user_type: 'CLIENT'}, required: false }
-      ]
-    });
+    const clients = await clientService.getAllClients();
+    logger.debug('[ClientController.getAll] Found %d clients. First client: %o', 
+      clients.length, 
+      clients[0] ? { id: clients[0].id, name: clients[0].name } : 'no clients'
+    );
     res.json(clients);
   } catch (error) {
-    logger.error('Ошибка при получении клиентов:', { error: error.message, stack: error.stack });
-    res.status(500).json({ message: 'Ошибка сервера при получении клиентов', error: error.message });
+    logger.error('[ClientController.getAll] Failed to get all clients. Error: %s', error.message, {
+      error: error,
+      stack: error.stack,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+    next(error);
   }
 }
 
@@ -34,21 +52,27 @@ async function getAll(req, res) {
  * @returns {Error} 404 - Клиент не найден
  * @returns {Error} 500 - Ошибка сервера
  */
-async function getById(req, res) {
+async function getById(req, res, next) {
+  const clientId = req.params.id;
+  logger.info('[ClientController.getById] Request to get client by ID: %s. Requesting user: %o', 
+    clientId, 
+    req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : { id: 'undefined' }
+  );
   try {
-    const client = await Client.findByPk(req.params.id, {
-      include: [
-        { model: Company, as: 'companies', attributes: ['id', 'name', 'inn'] },
-        { model: User, as: 'users', attributes: ['id', 'username', 'full_name', 'email', 'phone', 'position', 'user_type'], where: { user_type: 'CLIENT'}, required: false }
-      ]
-    });
+    const client = await clientService.getClientById(clientId); // Используем метод сервиса
     if (!client) {
+      logger.warn('[ClientController.getById] Client not found for ID: %s', clientId);
       return res.status(404).json({ message: 'Клиент не найден' });
     }
+    logger.debug('[ClientController.getById] Client found for ID %s. Sending response: %o', clientId, client);
     res.json(client);
   } catch (error) {
-    logger.error(`Ошибка при получении клиента ${req.params.id}:`, { error: error.message, stack: error.stack });
-    res.status(500).json({ message: 'Ошибка сервера при получении клиента', error: error.message });
+    logger.error('[ClientController.getById] Failed to get client by ID %s. Error: %s', clientId, error.message, {
+      error: error,
+      clientIdParam: clientId,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role, client_id: req.user.client_id } : null
+    });
+    next(error);
   }
 }
 
@@ -62,72 +86,43 @@ async function getById(req, res) {
  * @returns {Error} 400 - Ошибка валидации или загрузки файла.
  * @returns {Error} 500 - Ошибка сервера.
  */
-async function create(req, res) {
+async function create(req, res, next) {
   const { name } = req.body;
-  logger.info('[ClientController Create] Попытка создания клиента:', { name: name, fileInfo: req.file ? { originalname: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size } : 'No file uploaded' });
-
-  if (!name) {
-    logger.warn('[ClientController Create] Ошибка: Название клиента (name) является обязательным полем.');
-    return res.status(400).json({ message: 'Название клиента (name) является обязательным полем.' });
-  }
-
-  let logoUrl = null;
-
-  if (req.file && S3_BUCKET_NAME) {
-    const file = req.file;
-    const fileExtension = file.originalname.split('.').pop();
-    const fileName = `logos/clients/${uuidv4()}.${fileExtension}`;
-
-    const params = {
-      Bucket: S3_BUCKET_NAME,
-      Key: fileName,
-      Body: file.buffer,
-      ContentType: file.mimetype,
-      ACL: 'public-read',
-    };
-
-    try {
-      const s3UploadResponse = await s3.upload(params).promise();
-      
-      if (s3UploadResponse && s3UploadResponse.Location) {
-        logoUrl = s3UploadResponse.Location;
-        logger.info(`[ClientController Create] Файл успешно загружен в S3. URL: ${logoUrl}`);
-      } else {
-        logger.error('[ClientController Create] Ошибка: S3 не вернул Location после загрузки.', { s3Response: s3UploadResponse });
-      }
-    } catch (s3Error) {
-      logger.error(`[ClientController Create] ЯВНАЯ ОШИРКА S3 Message: ${s3Error.message}`);
-      logger.error(`[ClientController Create] ЯВНАЯ ОШИРКА S3 Code: ${s3Error.code}`);
-      logger.error(`[ClientController Create] ЯВНАЯ ОШИРКА S3 RequestId: ${s3Error.requestId}`);
-      logger.error(`[ClientController Create] ЯВНАЯ ОШИРКА S3 HostId: ${s3Error.hostId}`);
-      logger.error('[ClientController Create] ЯВНАЯ ОШИРКА S3 Stack: ' + s3Error.stack);
-
-      logger.error('[ClientController Create] Ошибка при загрузке файла в S3 (стандартный лог):', { errorMessage: s3Error.message, stack: s3Error.stack, errorObject: s3Error });
-      return res.status(500).json({ message: 'Ошибка при загрузке логотипа в S3.', errorDetail: s3Error.message });
-    }
-  } else {
-    if (!req.file) {
-    }
-    if (!S3_BUCKET_NAME && req.file) {
-        logger.warn('[ClientController Create] S3_BUCKET_NAME не определен, хотя файл для загрузки предоставлен. Логотип не будет загружен.');
-    }
-  }
+  const logoFile = req.file; // Получаем файл из req
+  const fileInfoLog = req.file ? { originalname: req.file.originalname, mimetype: req.file.mimetype, size: req.file.size } : 'No file uploaded';
+  
+  logger.info('[ClientController.create] Attempting to create client. Name: %s. File: %o. Requesting user: %o', 
+    name, 
+    fileInfoLog, 
+    req.user ? { id: req.user.id, role: req.user.role } : { id: 'undefined' }
+  );
 
   try {
-    const newClientData = { name };
-    if (logoUrl) {
-      newClientData.logo_url = logoUrl;
-    }
-
-    const newClient = await Client.create(newClientData);
-    logger.info('[ClientController Create] Клиент успешно создан в БД:', { clientId: newClient.id, clientName: newClient.name, logoUrl: newClient.logo_url });
+    // Валидация вынесена в middleware, здесь предполагаем, что данные валидны
+    // или специфичная логика валидации, не покрываемая Joi, может быть здесь
+    const clientData = { name };
+    const newClient = await clientService.createClient(clientData, logoFile);
+    
+    logger.info('[ClientController.create] Client created successfully. ID: %s, Name: %s, Logo: %s', newClient.id, newClient.name, newClient.logo_url);
     res.status(201).json(newClient);
-  } catch (dbError) {
-    logger.error('[ClientController Create] Ошибка при создании клиента в БД:', { errorMessage: dbError.message, stack: dbError.stack, errorObject: dbError });
-    if (dbError.name === 'SequelizeValidationError') {
-      return res.status(400).json({ message: 'Ошибка валидации: ' + dbError.errors.map(e => e.message).join(', ') });
+
+  } catch (error) {
+    logger.error('[ClientController.create] Failed to create client. Name: %s. Error: %s', name, error.message, {
+      error: error,
+      requestBody: req.body,
+      fileInfo: fileInfoLog,
+      requestingUser: req.user ? { id: req.user.id, role: req.user.role } : null
+    });
+    // Сервис может выбросить ошибку валидации Sequelize или другую ошибку
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ message: 'Ошибка валидации: ' + error.errors.map(e => e.message).join(', ') });
+    } 
+    // Для ошибок типа "S3 bucket name is not configured" или других специфичных ошибок от сервиса
+    if (error.message === 'S3 bucket name is not configured. Cannot upload logo.' || error.message === 'Failed to get S3 URL after logo upload.') {
+        return res.status(400).json({ message: error.message });
     }
-    res.status(500).json({ message: 'Ошибка сервера при создании клиента.', error: dbError.message });
+    // Общая ошибка сервера
+    next(error);
   }
 }
 
@@ -143,73 +138,47 @@ async function create(req, res) {
  * @returns {Error} 404 - Клиент не найден.
  * @returns {Error} 500 - Ошибка сервера.
  */
-async function update(req, res) {
+async function update(req, res, next) {
   const { id } = req.params;
   const { name, removeLogo } = req.body;
-  logger.info(`[ClientController Update] Попытка обновления клиента ID: ${id}`, { name, file: req.file ? req.file.originalname : 'No new file', removeLogo });
+  const logoFile = req.file;
+  const fileInfoLog = req.file ? { originalname: req.file.originalname, size: req.file.size } : 'No new file';
+
+  logger.info('[ClientController.update] Attempting to update client ID %s. Name: %s, File: %o, RemoveLogo: %s. Requesting user: %o', 
+    id, name, fileInfoLog, removeLogo, 
+    req.user ? { id: req.user.id, role: req.user.role } : { id: 'undefined' }
+  );
 
   try {
-    const client = await Client.findByPk(id);
-    if (!client) {
-      logger.warn(`[ClientController Update] Клиент ID: ${id} не найден.`);
+    const updateData = { name };
+    const updatedClient = await clientService.updateClient(id, updateData, logoFile, removeLogo);
+
+    if (!updatedClient) { // Эта проверка теперь делается в сервисе, но на всякий случай
+      logger.warn('[ClientController.update] Client not found for ID: %s after update attempt.', id);
       return res.status(404).json({ message: 'Клиент не найден' });
     }
-
-    if (name !== undefined) {
-      client.name = name;
-    }
-
-    let newLogoUrl = client.logo_url;
-
-    const oldLogoKey = client.logo_url ? client.logo_url.substring(client.logo_url.lastIndexOf(S3_BUCKET_NAME + '/') + (S3_BUCKET_NAME + '/').length) : null;
     
-    if (req.file || (removeLogo === 'true' && oldLogoKey)) {
-        if (oldLogoKey) {
-            try {
-                await s3.deleteObject({ Bucket: S3_BUCKET_NAME, Key: oldLogoKey }).promise();
-                logger.info(`[ClientController Update] Старый логотип ${oldLogoKey} успешно удален из S3.`);
-                newLogoUrl = null;
-            } catch (s3DeleteError) {
-                logger.error(`[ClientController Update] Ошибка при удалении старого логотипа ${oldLogoKey} из S3:`, { error: s3DeleteError.message, stack: s3DeleteError.stack });
-            }
-        }
-    }
+    logger.info('[ClientController.update] Client ID %s updated successfully. Response: %o', id, updatedClient);
+    res.json(updatedClient);
 
-    if (req.file) {
-      const file = req.file;
-      const fileExtension = file.originalname.split('.').pop();
-      const fileName = `logos/clients/${uuidv4()}.${fileExtension}`;
-      const s3UploadParams = {
-        Bucket: S3_BUCKET_NAME,
-        Key: fileName,
-        Body: file.buffer,
-        ContentType: file.mimetype,
-        ACL: 'public-read',
-      };
-
-      try {
-        const s3UploadResponse = await s3.upload(s3UploadParams).promise();
-        newLogoUrl = s3UploadResponse.Location;
-        logger.info(`[ClientController Update] Новый файл успешно загружен в S3. URL: ${newLogoUrl}`);
-      } catch (s3Error) {
-        logger.error('[ClientController Update] Ошибка при загрузке нового файла в S3:', { error: s3Error.message, stack: s3Error.stack });
-        return res.status(500).json({ message: 'Ошибка при загрузке нового логотипа в S3.', error: s3Error.message });
-      }
-    } else if (removeLogo === 'true') {
-        newLogoUrl = null;
+  } catch (error) {
+    logger.error('[ClientController.update] Failed to update client ID %s. Error: %s', id, error.message, {
+        error: error,
+        clientIdParam: id,
+        requestBody: req.body,
+        fileInfo: fileInfoLog,
+        requestingUser: req.user ? { id: req.user.id, role: req.user.role } : null
+    });
+    if (error.status === 404 || error.message === 'Client not found') {
+        return res.status(404).json({ message: 'Клиент не найден' });
     }
-    
-    client.logo_url = newLogoUrl;
-    await client.save();
-    logger.info(`[ClientController Update] Клиент ID: ${id} успешно обновлен в БД.`, { clientId: client.id, clientName: client.name, newLogoUrl: client.logo_url });
-    res.json(client);
-
-  } catch (dbError) {
-    logger.error(`[ClientController Update] Ошибка при обновлении клиента ID: ${id} в БД:`, { error: dbError.message, stack: dbError.stack });
-    if (dbError.name === 'SequelizeValidationError') {
-      return res.status(400).json({ message: 'Ошибка валидации: ' + dbError.errors.map(e => e.message).join(', ') });
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ message: 'Ошибка валидации: ' + error.errors.map(e => e.message).join(', ') });
     }
-    res.status(500).json({ message: 'Ошибка сервера при обновлении клиента.', error: dbError.message });
+    if (error.message === 'S3 bucket name is not configured. Cannot upload logo.' || error.message === 'Failed to get S3 URL after new logo upload.') {
+        return res.status(400).json({ message: error.message });
+    }
+    next(error);
   }
 }
 
@@ -223,40 +192,41 @@ async function update(req, res) {
  * @returns {Error} 400 - Ошибка: невозможно удалить клиента, если с ним связаны компании или пользователи
  * @returns {Error} 500 - Ошибка сервера
  */
-async function remove(req, res) {
+async function remove(req, res, next) {
+  const { id } = req.params;
+  logger.info('[ClientController.remove] Attempting to delete client ID %s. Requesting user: %o', 
+    id, 
+    req.user ? { id: req.user.id, role: req.user.role } : { id: 'undefined' }
+  );
+
   try {
-    const client = await Client.findByPk(req.params.id, {
-      include: ['companies', 'users']
+    await clientService.deleteClient(id);
+    logger.info('[ClientController.remove] Client ID %s deleted successfully.', id);
+    res.status(204).send(); // Стандартный ответ для успешного удаления без тела
+
+  } catch (error) {
+    logger.error('[ClientController.remove] Failed to delete client ID %s. Error: %s', id, error.message, {
+        error: error,
+        clientIdParam: id,
+        requestingUser: req.user ? { id: req.user.id, role: req.user.role } : null
     });
-    if (!client) {
+    if (error.status === 404 || error.message === 'Client not found') {
       return res.status(404).json({ message: 'Клиент не найден' });
     }
-
-    if (client.companies && client.companies.length > 0) {
-      return res.status(400).json({ message: 'Невозможно удалить клиента, так как с ним связаны юрлица. Сначала удалите или отвяжите их.' });
+    // Если сервис выбросил ошибку S3 или другую во время транзакции
+    if (error.message.includes('S3')) { // Простая проверка, можно улучшить
+        // Ошибка S3 могла произойти, но удаление из БД могло быть отменено транзакцией
+        // или наоборот, если удаление из S3 было после удаления из БД (что не рекомендуется)
+        // Логика уже в сервисе, здесь просто передаем ошибку дальше
     }
-    const clientUsers = await User.count({ where: { client_id: req.params.id, user_type: 'CLIENT' } });
-    if (clientUsers > 0) {
-       return res.status(400).json({ message: 'Невозможно удалить клиента, так как с ним связаны пользователи-клиенты. Сначала удалите или отвяжите их.' });
-    }
-    
-    if (client.logo_url) {
-      const logoKey = client.logo_url.substring(client.logo_url.lastIndexOf(S3_BUCKET_NAME + '/') + (S3_BUCKET_NAME + '/').length);
-      try {
-        await s3.deleteObject({ Bucket: S3_BUCKET_NAME, Key: logoKey }).promise();
-        logger.info(`[ClientController Remove] Логотип ${logoKey} успешно удален из S3.`);
-      } catch (s3DeleteError) {
-        logger.error(`[ClientController Remove] Ошибка при удалении логотипа ${logoKey} из S3:`, { error: s3DeleteError.message, stack: s3DeleteError.stack });
-      }
-    }
-
-    await client.destroy();
-    logger.info(`[ClientController Remove] Клиент ID: ${req.params.id} успешно удален из БД.`);
-    res.json({ message: 'Клиент успешно удален' });
-  } catch (error) {
-    logger.error(`Ошибка при удалении клиента ${req.params.id}:`, { error: error.message, stack: error.stack });
-    res.status(500).json({ message: 'Ошибка сервера при удалении клиента', error: error.message });
+    next(error);
   }
 }
 
-module.exports = { getAll, getById, create, update, remove }; 
+module.exports = {
+  getAll,
+  getById: [validateParams(clientIdSchema), getById],
+  create: [validateBody(createClientSchema), create],
+  update: [validateParams(clientIdSchema), validateBody(updateClientSchema), update],
+  remove: [validateParams(clientIdSchema), remove],
+}; 
