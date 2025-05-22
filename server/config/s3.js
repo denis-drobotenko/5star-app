@@ -1,12 +1,13 @@
-const { S3Client } = require('@aws-sdk/client-s3');
-require('dotenv').config(); // Раскомментируем на случай, если глобальной конфигурации нет или для явности
+import { S3Client } from '@aws-sdk/client-s3';
+import dotenv from 'dotenv';
+dotenv.config(); // Раскомментируем на случай, если глобальной конфигурации нет или для явности
 
 // Читаем переменные окружения
-const S3_ENDPOINT = process.env.S3_ENDPOINT;
-const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID;
-const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY;
-const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
-const S3_REGION = process.env.S3_REGION || 'ru-msk';
+export const S3_ENDPOINT = process.env.S3_ENDPOINT;
+export const S3_ACCESS_KEY_ID = process.env.S3_ACCESS_KEY_ID;
+export const S3_SECRET_ACCESS_KEY = process.env.S3_SECRET_ACCESS_KEY;
+export const S3_BUCKET_NAME = process.env.S3_BUCKET_NAME;
+export const S3_REGION = process.env.S3_REGION || 'ru-msk';
 
 // Удаляем захардкоженные значения
 // const S3_ENDPOINT = 'https://s3.regru.cloud';
@@ -27,7 +28,7 @@ if (!S3_ENDPOINT || !S3_ACCESS_KEY_ID || !S3_SECRET_ACCESS_KEY || !S3_BUCKET_NAM
   // Либо использовать logger, если он инициализируется раньше S3 конфига (что маловероятно)
 }
 
-const s3Client = new S3Client({
+export const s3Client = new S3Client({
   endpoint: S3_ENDPOINT,
   credentials: {
     accessKeyId: S3_ACCESS_KEY_ID,
@@ -38,4 +39,4 @@ const s3Client = new S3Client({
   region: S3_REGION, 
 });
 
-module.exports = { s3Client, S3_BUCKET_NAME }; 
+// module.exports = { s3Client, S3_BUCKET_NAME }; // Заменяем на именованные экспорты выше 

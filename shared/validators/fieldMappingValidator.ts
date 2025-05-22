@@ -1,5 +1,5 @@
-const Joi = require('joi');
-const logger = require('../../server/config/logger');
+import Joi from 'joi';
+import logger from '../../server/config/logger.js';
 
 const messages = {
   id: {
@@ -74,42 +74,41 @@ const getSignedUrlSchema = Joi.object({
   key: Joi.string().required().messages(messages.key),
 });
 
-const validateBody = (schema) => (req, res, next) => {
+const validateBody = (schema: any) => (req: any, res: any, next: any) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
-    const errors = error.details.map((detail) => detail.message);
+    const errors = error.details.map((detail: any) => detail.message);
     logger.warn('[FieldMappingValidator] Body validation failed: %o', errors);
     return res.status(400).json({ message: 'Ошибка валидации данных запроса', errors });
   }
   next();
 };
 
-const validateParams = (schema) => (req, res, next) => {
+const validateParams = (schema: any) => (req: any, res: any, next: any) => {
   logger.debug(`[FieldMappingValidator.validateParams] Validating params for ${req.method} ${req.originalUrl} with schema. Keys: ${Object.keys(schema.describe().keys || {})}`);
   logger.debug(`[FieldMappingValidator.validateParams] req.params: ${JSON.stringify(req.params)}`);
   const { error } = schema.validate(req.params, { abortEarly: false });
   if (error) {
-    const errors = error.details.map((detail) => detail.message);
+    const errors = error.details.map((detail: any) => detail.message);
     logger.warn('[FieldMappingValidator] Params validation failed: %o', errors);
     return res.status(400).json({ message: 'Ошибка валидации параметров пути', errors });
   }
   next();
 };
 
-const validateQuery = (schema) => (req, res, next) => {
+const validateQuery = (schema: any) => (req: any, res: any, next: any) => {
   logger.debug(`[FieldMappingValidator.validateQuery] Validating query for ${req.method} ${req.originalUrl} with schema. Keys: ${Object.keys(schema.describe().keys || {})}`);
   logger.debug(`[FieldMappingValidator.validateQuery] req.query: ${JSON.stringify(req.query)}`);
   const { error } = schema.validate(req.query, { abortEarly: false });
   if (error) {
-    const errors = error.details.map((detail) => detail.message);
+    const errors = error.details.map((detail: any) => detail.message);
     logger.warn('[FieldMappingValidator] Query validation failed: %o', errors);
     return res.status(400).json({ message: 'Ошибка валидации query-параметров', errors });
   }
   next();
 };
 
-// Обновляем module.exports, чтобы включить все схемы и функции
-module.exports = {
+export {
   validateBody,
   validateParams,
   validateQuery,
@@ -118,6 +117,5 @@ module.exports = {
   createMappingSchema,
   updateMappingSchema,
   uploadSampleSchema,
-  getSignedUrlSchema,
-  // baseMappingSchema и messages экспортировать не обязательно, если они не используются напрямую извне
+  getSignedUrlSchema
 }; 

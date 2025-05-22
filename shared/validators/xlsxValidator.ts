@@ -1,5 +1,6 @@
-const Joi = require('joi');
-const logger = require('../../server/config/logger');
+import Joi from 'joi';
+import logger from '../../server/config/logger.js';
+import { Request, Response, NextFunction } from 'express';
 
 const messages = {
   s3Key: {
@@ -8,21 +9,22 @@ const messages = {
   },
 };
 
-const processS3XLSXSchema = Joi.object({
+export const processS3XLSXSchema = Joi.object({
   s3Key: Joi.string().required().messages(messages.s3Key),
 });
 
-const validateBody = (schema) => (req, res, next) => {
+export const validateBody = (schema: Joi.Schema) => (req: Request, res: Response, next: NextFunction) => {
   const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
     const errors = error.details.map((detail) => detail.message);
-    logger.warn('[XLSXValidator] Body validation failed: %o', errors);
+    if (logger && typeof logger.warn === 'function') {
+      logger.warn('[XLSXValidator] Body validation failed: %o', errors);
+    } else {
+      console.warn('[XLSXValidator] Body validation failed:', errors);
+    }
     return res.status(400).json({ message: 'Ошибка валидации данных запроса', errors });
   }
   next();
 };
 
-module.exports = {
-  validateBody,
-  processS3XLSXSchema,
-}; 
+export {}; 

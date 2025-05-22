@@ -1,4 +1,5 @@
-const Joi = require('joi');
+import { Request, Response, NextFunction } from 'express';
+import Joi from 'joi';
 
 const registerSchema = Joi.object({
   email: Joi.string().email().required().messages({
@@ -51,19 +52,14 @@ const resetPasswordSchema = Joi.object({
 });
 
 // Middleware для валидации
-const validate = (schema) => (req, res, next) => {
-  const { error } = schema.validate(req.body, { abortEarly: false }); // abortEarly: false для сбора всех ошибок
+const validate = (schema: Joi.Schema) => (req: Request, res: Response, next: NextFunction): void => {
+  const { error } = schema.validate(req.body, { abortEarly: false });
   if (error) {
-    const errors = error.details.map((detail) => detail.message);
-    return res.status(400).json({ message: 'Ошибка валидации', errors });
+    const errors = error.details.map((detail: Joi.ValidationErrorItem) => detail.message);
+    res.status(400).json({ message: 'Ошибка валидации', errors });
+    return;
   }
   next();
 };
 
-module.exports = {
-  validate,
-  registerSchema,
-  loginSchema,
-  requestPasswordResetSchema,
-  resetPasswordSchema,
-}; 
+export { validate, registerSchema, loginSchema, requestPasswordResetSchema, resetPasswordSchema }; 

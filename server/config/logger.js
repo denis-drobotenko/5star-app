@@ -1,8 +1,8 @@
-const winston = require('winston');
-const path = require('path');
-require('winston-daily-rotate-file'); // Добавляем импорт
+import winston from 'winston';
+import path from 'path';
+import 'winston-daily-rotate-file';
 
-const logsDir = path.join(__dirname, '../../logs'); 
+const logsDir = path.join(path.dirname(new URL(import.meta.url).pathname), '../../logs');
 const logFilePath = path.join(logsDir, 'app.log');
 
 const { combine, timestamp, printf, colorize, errors, json } = winston.format;
@@ -92,4 +92,4 @@ process.on('uncaughtException', (error) => {
   process.exit(1); // Обязательно завершаем процесс
 });
 
-module.exports = logger; 
+export default logger; 

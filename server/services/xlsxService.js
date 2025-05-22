@@ -1,11 +1,10 @@
-const XLSX = require('xlsx');
-const { s3Client, S3_BUCKET_NAME } = require('../config/s3');
-const { PutObjectCommand, GetObjectCommand } = require('@aws-sdk/client-s3');
-const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
-const { v4: uuidv4 } = require('uuid');
-const logger = require('../config/logger');
-const { sanitizeFileName } = require('../../shared/utils/filenameUtils');
-
+import XLSX from 'xlsx';
+import { s3Client, S3_BUCKET_NAME } from '../config/s3.js';
+import { PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { v4 as uuidv4 } from 'uuid';
+import logger from '../config/logger.js';
+import { sanitizeFileName } from '../../shared/utils/filenameUtils.js';
 class XlsxService {
     /**
      * Parses an XLSX file buffer.
@@ -16,7 +15,6 @@ class XlsxService {
         const workbook = XLSX.read(buffer, { type: 'buffer' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
         const rawRows = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
-
         if (rawRows.length === 0) {
             return {
                 fields: [],
@@ -25,26 +23,22 @@ class XlsxService {
                 previewRows: 0
             };
         }
-
         const headers = rawRows[0];
         const dataRowsOnly = rawRows.slice(1);
-
-        let objectRows = dataRowsOnly.map(rowArray => {
+        let objectRows = dataRowsOnly.map((rowArray) => {
             const obj = {};
             headers.forEach((header, index) => {
                 obj[header] = rowArray[index];
             });
             return obj;
         });
-
-        const filteredObjectRows = objectRows.filter(row => {
-            if (Object.keys(row).length === 0) return false;
-            const otherColumnValues = headers.length > 1 ? Object.values(row).slice(1) : Object.values(row);
-            return otherColumnValues.some(value => value !== null && value !== undefined && String(value).trim() !== '');
+        const filteredObjectRows = objectRows.filter((row) => {
+            if (Object.keys(row).length === 0)
+                return false;
+            const values = Object.values(row);
+            return values.some((value) => value !== null && value !== undefined && String(value).trim() !== '');
         });
-
         const previewFilteredRows = filteredObjectRows.slice(0, 100);
-
         return {
             fields: headers,
             rows: previewFilteredRows,
@@ -52,7 +46,6 @@ class XlsxService {
             previewRows: previewFilteredRows.length
         };
     }
-
     /**
      * Processes an uploaded XLSX file: parses it, saves to S3, and generates a signed URL.
      * @param {object} file - The uploaded file object (e.g., from multer).
@@ -64,8 +57,7 @@ class XlsxService {
      */
     static async handleUploadedXlsx(file) {
         logger.debug('[XlsxService.handleUploadedXlsx] Processing uploaded file: %s', file.originalname);
-        const parsedData = this.parseXlsxBuffer(file.buffer);
-
+        const parsedData = XlsxService.parseXlsxBuffer(file.buffer);
         let originalDisplayName = file.originalname;
         try {
             // Попытка декодировать имя файла из latin1 в utf8, если оно было некорректно передано
@@ -74,27 +66,27 @@ class XlsxService {
             // Проверяем на наличие символа замены, который указывает на неудачное декодирование
             if (!decodedName.includes('\uFFFD')) {
                 originalDisplayName = decodedName;
-            } else {
-                 // Если latin1 -> utf8 не помогло, пробуем utf8 -> utf8 (на случай если файл уже в utf8 но интерпретирован как latin1 где-то ранее)
-                 originalDisplayName = Buffer.from(file.originalname, 'utf8').toString('utf8');
             }
-        } catch (e) {
+            else {
+                // Если latin1 -> utf8 не помогло, пробуем utf8 -> utf8 (на случай если файл уже в utf8 но интерпретирован как latin1 где-то ранее)
+                originalDisplayName = Buffer.from(file.originalname, 'utf8').toString('utf8');
+            }
+        }
+        catch (e) {
             logger.warn('[XlsxService.handleUploadedXlsx] Failed to decode original file name: %s. Error: %s', file.originalname, e.message);
             // Оставляем originalDisplayName как есть, если декодирование не удалось
         }
-
         const sanitizedFileNameForS3 = sanitizeFileName(file.originalname); // Санитизируем исходное имя для ключа S3
         const originalFileKey = `original-xlsx-uploads/${uuidv4()}-${sanitizedFileNameForS3}`;
-        
         let originalFileUrl = '';
         let signedOriginalFileUrl = '';
-
         if (!S3_BUCKET_NAME) {
             logger.error('[XlsxService.handleUploadedXlsx] S3_BUCKET_NAME is not configured.');
             // В этом случае мы не можем сохранить файл, но можем вернуть распарсенные данные
             // Или можно бросить ошибку, чтобы контроллер вернул 500
             // Пока что просто не будем пытаться сохранить и вернем пустые S3 поля
-        } else {
+        }
+        else {
             try {
                 const putObjectParams = {
                     Bucket: S3_BUCKET_NAME,
@@ -104,23 +96,21 @@ class XlsxService {
                 };
                 await s3Client.send(new PutObjectCommand(putObjectParams));
                 originalFileUrl = `${process.env.S3_ENDPOINT || 'https://s3.regru.cloud'}/${S3_BUCKET_NAME}/${originalFileKey}`;
-
                 const command = new GetObjectCommand({ Bucket: S3_BUCKET_NAME, Key: originalFileKey });
                 signedOriginalFileUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-
                 logger.info(`[XlsxService.handleUploadedXlsx] File ${originalDisplayName} successfully saved to S3 as ${originalFileKey}`);
-            } catch (s3Error) {
+            }
+            catch (s3Error) {
                 logger.error('[XlsxService.handleUploadedXlsx] Error saving original XLSX file to S3', {
                     fileName: originalDisplayName,
                     s3Key: originalFileKey,
-                    error: s3Error
+                    error: s3Error.message
                 });
                 // Не прерываем из-за ошибки S3, просто URL останутся пустыми
-                originalFileUrl = ''; 
+                originalFileUrl = '';
                 signedOriginalFileUrl = '';
             }
         }
-        
         return {
             ...parsedData,
             originalFileUrl,
@@ -129,7 +119,6 @@ class XlsxService {
             originalFileName: originalDisplayName
         };
     }
-
     /**
      * Downloads an XLSX file from S3, parses it, and extracts the original file name.
      * @param {string} s3Key - The S3 key (path) to the file.
@@ -138,14 +127,12 @@ class XlsxService {
      */
     static async handleS3Xlsx(s3Key) {
         logger.debug('[XlsxService.handleS3Xlsx] Processing S3 XLSX file. Key: %s', s3Key);
-
         if (!S3_BUCKET_NAME) {
             logger.error('[XlsxService.handleS3Xlsx] S3_BUCKET_NAME is not configured.');
             const error = new Error('S3_BUCKET_NAME не настроен на сервере.');
             error.statusCode = 500; // Internal Server Error
             throw error;
         }
-
         let s3ObjectResponse;
         try {
             s3ObjectResponse = await s3Client.send(new GetObjectCommand({
@@ -153,7 +140,8 @@ class XlsxService {
                 Key: s3Key,
             }));
             logger.info('[XlsxService.handleS3Xlsx] Successfully retrieved S3 object metadata. Key: %s', s3Key);
-        } catch (s3GetError) {
+        }
+        catch (s3GetError) {
             logger.error('[XlsxService.handleS3Xlsx] Failed to get object from S3. Key: %s. Error: %s', s3Key, s3GetError.message, { error: s3GetError });
             if (s3GetError.name === 'NoSuchKey') {
                 const error = new Error('Файл не найден в S3 по указанному ключу');
@@ -162,36 +150,34 @@ class XlsxService {
             }
             throw s3GetError; // Re-throw other S3 errors
         }
-
         let fileBuffer;
         try {
-            const streamToBuffer = (stream) =>
-                new Promise((resolve, reject) => {
-                    const chunks = [];
-                    stream.on('data', (chunk) => chunks.push(chunk));
-                    stream.on('error', reject);
-                    stream.on('end', () => resolve(Buffer.concat(chunks)));
-                });
+            const streamToBuffer = (stream) => new Promise((resolve, reject) => {
+                const chunks = [];
+                stream.on('data', (chunk) => chunks.push(chunk));
+                stream.on('error', reject);
+                stream.on('end', () => resolve(Buffer.concat(chunks)));
+            });
             fileBuffer = await streamToBuffer(s3ObjectResponse.Body);
             logger.debug('[XlsxService.handleS3Xlsx] S3 object body converted to buffer. Size: %d bytes', fileBuffer.length);
-        } catch (bufferError) {
+        }
+        catch (bufferError) {
             logger.error('[XlsxService.handleS3Xlsx] Failed to convert S3 stream to buffer. Key: %s. Error: %s', s3Key, bufferError.message, { error: bufferError });
             const error = new Error('Ошибка при чтении содержимого файла из S3: ' + bufferError.message);
             error.statusCode = 500;
             throw error;
         }
-
         let parsedData;
         try {
-            parsedData = this.parseXlsxBuffer(fileBuffer);
+            parsedData = XlsxService.parseXlsxBuffer(fileBuffer);
             logger.debug('[XlsxService.handleS3Xlsx] S3 file %s parsed successfully.', s3Key);
-        } catch (parseError) {
+        }
+        catch (parseError) {
             logger.error('[XlsxService.handleS3Xlsx] Failed to parse XLSX from S3 buffer. Key: %s. Error: %s', s3Key, parseError.message, { error: parseError });
             const error = new Error('Ошибка при внутреннем разборе XLSX файла из S3: ' + parseError.message);
             error.statusCode = 500;
             throw error;
         }
-
         let originalFileName = 'unknownfile.xlsx';
         if (s3Key.includes('/')) {
             const keyParts = s3Key.split('/');
@@ -201,22 +187,20 @@ class XlsxService {
             const match = fileNameWithPossiblyUuid.match(uuidRegex);
             if (match && match[2]) {
                 originalFileName = match[2];
-            } else {
+            }
+            else {
                 originalFileName = fileNameWithPossiblyUuid; // Fallback to the full last part if no UUID match
             }
-        } else {
+        }
+        else {
             originalFileName = s3Key; // If no slashes, the key itself is the filename
         }
         logger.debug('[XlsxService.handleS3Xlsx] Extracted originalFileName: %s from S3 key: %s', originalFileName, s3Key);
-
         return {
             ...parsedData,
             originalFileName,
             s3Key
         };
     }
-
-    // Другие методы будут добавлены сюда
 }
-
-module.exports = XlsxService; 
+export default XlsxService;
