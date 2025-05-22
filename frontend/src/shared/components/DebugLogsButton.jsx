@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Modal, Button, Skeleton, message } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
-import { API_URL } from '../constants/appConstants';
+import { API_URL } from '../constants/appConstants'; // путь уже корректный, так как оба файла в shared
 
 function DebugLogsButton() {
   const [isModalVisible, setIsModalVisible] = useState(false);

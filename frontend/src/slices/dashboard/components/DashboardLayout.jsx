@@ -13,9 +13,9 @@ import {
     UserOutlined, // Для подпункта "Пользователи" в Настройках
     UploadOutlined // Для "Загрузка данных"
 } from '@ant-design/icons';
-import { useAuth } from '../contexts/AuthContext';
-import { APP_NAME, API_URL } from '../constants/appConstants'; // API_URL для DebugLogsButton
-import DebugLogsButton from '../components/DebugLogsButton'; // Импортируем новый компонент
+import { useAuth } from '../../auth/AuthContext';
+import { APP_NAME, API_URL } from '../../../shared/constants/appConstants';
+import DebugLogsButton from '../../../shared/components/DebugLogsButton';
 
 const { Title } = Typography; // Title используется в Sider
 

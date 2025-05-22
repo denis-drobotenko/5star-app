@@ -25,8 +25,15 @@
 - [ ] **Frontend:**
     - [x] Вынести `DebugLogsButton` в `src/frontend/src/components/DebugLogsButton.jsx`. (Перемещено из "Рефакторинг Frontend структуры")
     - [ ] Проверить работоспособность приложения после всех рефакторингов. (Объединено и перемещено)
-
-
+- [ ] **Frontend: Перенос модулей в slices/shared**
+    - [ ] Перенести модуль аутентификации (login, reset-password, AuthProvider) в slices/auth (в процессе)
+    - [ ] Перенести модуль Dashboard (layout, home) в slices/dashboard
+    - [x] Перенести модуль компаний в slices/companies
+    - [x] Перенести модуль клиентов в slices/clients
+    - [x] Перенести модуль пользователей клиентов в slices/client-users
+    - [x] Перенести модуль маппинга полей в slices/field-mapping
+    - [x] Перенести модуль настроек в slices/settings
+    - [ ] Перенести общие компоненты, утилиты и константы в shared
 
 ## 1. Пользователи и роли
 - [x] CRUD для пользователей (создание, редактирование, удаление, получение по id и списком)

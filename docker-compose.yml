@@ -3,13 +3,12 @@ version: '3.9'
 services:
   frontend:
     build: 
-      context: ./src/frontend
-      target: development
+      context: ./frontend
     container_name: app-frontend
     ports:
       - "5173:5173"
     volumes:
-      - ./src/frontend:/var/www/app/frontend
+      - ./frontend:/var/www/app/frontend
       - /var/www/app/frontend/node_modules
     command: npm run dev
     networks:

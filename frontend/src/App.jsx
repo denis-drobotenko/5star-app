@@ -3,7 +3,7 @@ import { Button, Typography, Menu, Layout, Table, Modal, Form, Input, message, S
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, Link, useLocation, Outlet } from 'react-router-dom'
 import { InfoCircleOutlined, TableOutlined, UploadOutlined, LeftOutlined, RightOutlined, SettingOutlined, PlusOutlined, LoadingOutlined, TeamOutlined, UsergroupAddOutlined, HomeOutlined, ApartmentOutlined, BranchesOutlined } from '@ant-design/icons'
 import './App.css'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
+import { AuthProvider, useAuth } from './slices/auth/AuthContext'
 import { 
   API_URL, 
   APP_NAME, 
@@ -15,16 +15,16 @@ import {
   SIDER_MENU_ITEM_SELECTED_BG_COLOR_DARK,
   SIDER_MENU_ITEM_HOVER_BG_COLOR_DARK,
   BUTTON_PRIMARY_TEXT_COLOR
-} from './constants/appConstants'
-import LoginPage from './pages/LoginPage'
-import DashboardLayout from './layouts/DashboardLayout'
-import DashboardHomePage from './pages/DashboardHomePage'
-import CompaniesPage from './pages/CompaniesPage'
-import ClientsPage from './pages/ClientsPage'
-import ClientUsersPage from './pages/UsersPage'
-import FieldMappingPage from './pages/FieldMappingPage'
-import SettingsPage from './pages/SettingsPage'
-import ResetPasswordPage from './pages/ResetPasswordPage'
+} from './shared/constants/appConstants'
+import LoginPage from './slices/auth/components/LoginPage'
+import DashboardLayout from './slices/dashboard/components/DashboardLayout'
+import DashboardHomePage from './slices/dashboard/components/DashboardHomePage'
+import CompaniesPage from './slices/companies/components/CompaniesPage'
+import ClientsPage from './slices/clients/components/ClientsPage'
+import ClientUsersPage from './slices/client-users/components/UsersPage'
+import FieldMappingPage from './slices/field-mapping/components/FieldMappingPage'
+import SettingsPage from './slices/settings/components/SettingsPage'
+import ResetPasswordPage from './slices/auth/components/ResetPasswordPage'
 import { DataImportsPage } from "./slices/data-import"
 
 const { Title, Paragraph } = Typography;

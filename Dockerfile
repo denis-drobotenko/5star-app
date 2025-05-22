@@ -5,13 +5,13 @@ FROM node:18-alpine as frontend
 WORKDIR /usr/src/frontend
 
 # Копируем package.json и package-lock.json фронтенда
-COPY src/frontend/package*.json ./
+COPY frontend/package*.json ./
 
 # Устанавливаем зависимости фронтенда
 RUN npm install
 
 # Копируем исходный код фронтенда
-COPY src/frontend/ ./
+COPY frontend/ ./
 
 # Собираем фронтенд
 RUN npm run build
@@ -29,7 +29,7 @@ COPY package*.json ./
 RUN npm install
 
 # Копируем собранный фронтенд
-COPY --from=frontend /usr/src/frontend/dist ./src/frontend/dist
+COPY --from=frontend /usr/src/frontend/dist ./frontend/dist
 
 # Копируем исходный код
 COPY . .
@@ -50,7 +50,7 @@ COPY package*.json ./
 RUN npm install --production
 
 # Копируем собранный фронтенд
-COPY --from=frontend /usr/src/frontend/dist ./src/frontend/dist
+COPY --from=frontend /usr/src/frontend/dist ./frontend/dist
 
 # Копируем исходный код
 COPY . .

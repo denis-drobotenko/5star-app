@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Typography, Form, Input, Select, Skeleton, Upload, Progress, Empty, Space, App, Card, InputNumber, Modal, Table, Divider, Alert } from 'antd';
 import { InfoCircleOutlined, UploadOutlined, LeftOutlined, RightOutlined, PlusOutlined, DeleteOutlined, SaveOutlined, SettingOutlined, LinkOutlined } from '@ant-design/icons';
-import { API_URL } from '../constants/appConstants';
-import { requiredFields, targetFieldMappings, processingFunctions } from '../shared/config/fieldMappingConstants';
-import '../assets/forms.css';
-import apiClient from '../shared/api/apiClient';
+import { API_URL } from '../../../shared/constants/appConstants';
+import { requiredFields, targetFieldMappings, processingFunctions } from '../../../shared/config/fieldMappingConstants';
+import '../../../shared/assets/forms.css';
+import apiClient from '../../../shared/api/apiClient';
 
 const { Title, Paragraph } = Typography;
 

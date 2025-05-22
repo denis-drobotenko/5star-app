@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, Typography, Skeleton, Form, Input, Modal, App as AntApp } from 'antd';
 // import { InfoCircleOutlined, MailOutlined, LockOutlined } from '@ant-design/icons'; // Иконки удалены
-import { useAuth } from '../contexts/AuthContext';
-import { APP_NAME, TEXT_COLOR_DARK, MAIN_BACKGROUND_COLOR, API_URL, DEFAULT_LOGIN_IMAGE_URL } from '../constants/appConstants';
+import { useAuth } from '../AuthContext';
+import { APP_NAME, TEXT_COLOR_DARK, MAIN_BACKGROUND_COLOR, API_URL, DEFAULT_LOGIN_IMAGE_URL } from '../../../shared/constants/appConstants';
 
 const { Title, Paragraph, Text } = Typography;
 

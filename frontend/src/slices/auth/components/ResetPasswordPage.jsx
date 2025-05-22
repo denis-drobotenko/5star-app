@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Input, Button, Typography, Alert, App as AntApp } from 'antd';
-import { API_URL, APP_NAME, TEXT_COLOR_DARK, MAIN_BACKGROUND_COLOR, DEFAULT_LOGIN_IMAGE_URL } from '../constants/appConstants';
+import { API_URL, APP_NAME, TEXT_COLOR_DARK, MAIN_BACKGROUND_COLOR, DEFAULT_LOGIN_IMAGE_URL } from '../../../shared/constants/appConstants';
 
 const { Title, Paragraph } = Typography;
 

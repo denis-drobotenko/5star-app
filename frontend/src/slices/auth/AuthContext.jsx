@@ -1,6 +1,6 @@
 import React, { useState, useEffect, createContext, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
-import { API_URL } from '../constants/appConstants'; // Импортируем API_URL
+import { API_URL } from '../../shared/constants/appConstants'; // Импортируем API_URL
 
 // Константа API_URL УДАЛЕНА отсюда, так как перенесена в constants/appConstants.js
 

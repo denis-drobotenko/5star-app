@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Button, Typography, Form, Input, Select, Skeleton, Upload, Space, Empty, App } from 'antd';
 import { InfoCircleOutlined, UploadOutlined, PlusOutlined, LoadingOutlined } from '@ant-design/icons';
-import { API_URL } from '../constants/appConstants';
+import { API_URL } from '../../../shared/constants/appConstants';
 
 const { Title, Paragraph } = Typography;
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button, Typography, Upload, message, Card, Row, Col, List } from 'antd';
 import { LoadingOutlined, PlusOutlined, PictureOutlined, EditOutlined } from '@ant-design/icons';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
-import { APP_NAME } from '../constants/appConstants';
+import { APP_NAME } from '../../../shared/constants/appConstants';
 import InternalUsersPage from './InternalUsersPage';
 
 const { Title, Paragraph } = Typography;

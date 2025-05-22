@@ -20,7 +20,7 @@
     "dev": "concurrently \"npm run dev:backend:kill_and_start\" \"npm run dev:frontend\"",
     "dev:backend": "nodemon --delay 5s src/server.js",
     "dev:backend:kill_and_start": "(fuser -k 3000/tcp || true) && nodemon --delay 5s --exec \"node --trace-uncaught --unhandled-rejections=strict src/server.js\"",
-    "dev:frontend": "(fuser -k 5173/tcp || true) && cd src/frontend && npm run dev -- --host",
+    "dev:frontend": "(fuser -k 5173/tcp || true) && cd frontend && npm run dev -- --host",
     "docs:ai": "jsdoc2md src/**/*.js > docs/AI_FUNCTIONS.md",
     "docs:ai:json": "node generate-ai-functions-json.js",
     "docker:dev": "docker-compose up",

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Typography, Button, Space, Input, Select, message, Upload, Modal, Steps, Card, Spin, Alert, List, Empty, Tag, Descriptions, Form, Skeleton, Table, Row, Col, Layout, Radio, Progress } from 'antd';
 import { UploadOutlined, FileExcelOutlined, CheckCircleOutlined, CloseCircleOutlined, LoadingOutlined, EyeOutlined, PlayCircleOutlined, InfoCircleOutlined, PlusOutlined, InboxOutlined, SyncOutlined, HourglassOutlined, ExclamationCircleOutlined, ArrowRightOutlined, ArrowLeftOutlined, SaveOutlined, DeleteOutlined } from '@ant-design/icons';
-import '../../../assets/forms.css';
+import '../../../shared/assets/forms.css';
 import { targetFieldMappings, processingFunctions } from '../../../shared/config/fieldMappingConstants';
 import moment from 'moment';
 import { useDataImportProcess } from '../hooks/useDataImportProcess';
